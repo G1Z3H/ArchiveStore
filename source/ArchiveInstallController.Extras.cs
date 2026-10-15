@@ -929,9 +929,10 @@ namespace ArchiveStore
 
                 if (found.Installers.Count == 0 && found.Manual.Count == 0)
                 {
-                    ArchiveLog.Info($"Menu DLC et patchs de '{Game.Name}' : aucun dossier de DLC ou de patchs (ni installeur, ni fichiers à copier).");
+                    ArchiveLog.Info($"Menu DLC et patchs de '{Game.Name}' : aucun dossier de DLC ou de patchs (nom commençant par « __ »), ou ils sont vides.");
                     Notify("ArchiveStore_ExtrasMenuNone",
-                        $"ArchiveStore : aucun dossier de DLC ou de patchs trouvé pour '{Game.Name}'.",
+                        $"ArchiveStore : aucun dossier de DLC ou de patchs trouvé pour '{Game.Name}'. " +
+                        "Leur nom doit commencer par deux underscores et contenir DLC, patch ou update (par exemple « __DLC » ou « __Patch »).",
                         NotificationType.Info);
                     return;
                 }

@@ -116,10 +116,10 @@ namespace ArchiveStore
         /// <summary>Type reconnu par signature (Inno Setup, NSIS) ou extension (.msi).</summary>
         public InstallerType Type { get; set; }
 
-        /// <summary>Nom du sous-dossier d'extras où il se trouve (ex. "DLC", "Patch").</summary>
+        /// <summary>Nom du sous-dossier d'extras où il se trouve (ex. "__DLC", "__Patch").</summary>
         public string FolderName { get; set; }
 
-        /// <summary>Vrai si le dossier est un dossier de DLC (son nom contient « DLC »), faux = patch.</summary>
+        /// <summary>Vrai si le dossier est un dossier de DLC (son nom contient « DLC »), faux = patch. Le nom commence toujours par deux underscores.</summary>
         public bool IsDlc { get; set; }
 
         /// <summary>
@@ -138,7 +138,7 @@ namespace ArchiveStore
 
         /// <summary>
         /// Identifiant stable de cet installeur : son chemin RELATIF dans le dossier du jeu
-        /// (ex. « DLC\setup_dlc1.exe »). C'est ce qu'on mémorise pour savoir qu'il est déjà installé.
+        /// (ex. « __DLC\setup_dlc1.exe »). C'est ce qu'on mémorise pour savoir qu'il est déjà installé.
         /// </summary>
         public string Key { get; set; }
     }
@@ -533,27 +533,38 @@ namespace ArchiveStore
         // ==============================================================
         // EXTRAS (DLC, patchs) — sous-dossiers du dossier d'un jeu
         // ==============================================================
-        // PÉDAGOGIE : l'utilisateur range les installeurs de DLC et de patchs dans
-        // des sous-dossiers du jeu (ex. "MonJeu\DLC", "MonJeu\Patch"). Deux règles :
+        // PÉDAGOGIE : l'utilisateur range les DLC et les patchs dans des sous-dossiers du jeu dont le NOM
+        // COMMENCE PAR DEUX UNDERSCORES (ex. "MonJeu\__DLC", "MonJeu\__Patch"). Deux règles :
         //   1. Ces dossiers sont IGNORÉS quand on cherche l'installeur du jeu de base
         //      (sinon un DLC pourrait être pris pour le jeu).
-        //   2. Une fois le jeu installé, on y cherche les installeurs à lancer ensuite.
+        //   2. Une fois le jeu installé, on y cherche les installeurs à lancer ensuite, ou les fichiers à copier.
         // Seuls les sous-dossiers DIRECTS du dossier du jeu comptent : un dossier
         // "Patch" enfoui plus profond fait partie du jeu lui-même et n'est pas touché.
         //
-        // RÈGLE FIXE (plus de liste modifiable) : on regarde le NOM du dossier, sans tenir compte
-        // des majuscules.
-        //   - le nom contient « dlc »                      → DLC
-        //   - le nom contient « patch » (patch, patchs, patches, Patch_1.2…) ou « update » → patch
-        //   - sinon                                        → ce n'est pas un dossier d'extras
+        // POURQUOI DEUX UNDERSCORES : beaucoup de jeux ont, dans leurs propres fichiers, un vrai dossier
+        // « DLC » ou « Patch » (des données du jeu). Sans préfixe, le plugin le prendrait pour un extra à
+        // installer ou à copier. Le préfixe « __ » dit « ce dossier est un extra préparé pour ArchiveStore ».
+        // Il n'y a VOLONTAIREMENT aucun réglage pour le désactiver : trop risqué.
+        //
+        // RÈGLE FIXE (aucun réglage) : on regarde le NOM du dossier, sans tenir compte des majuscules.
+        //   - le nom ne commence pas par « __ »                    → ce n'est pas un dossier d'extras
+        //   - sinon, le nom contient « dlc »                       → DLC
+        //   - sinon, le nom contient « patch » (patch, patchs, patches, Patch_1.2…) ou « update » → patch
+        //   - sinon                                                → ce n'est pas un dossier d'extras
+        //     (le mot est obligatoire : c'est lui qui dit DLC ou patch, donc l'ordre d'installation)
 
         /// <summary>Genre d'un sous-dossier du jeu.</summary>
         public enum ExtraFolderKind { None, Dlc, Patch }
+
+        /// <summary>Préfixe obligatoire d'un dossier d'extras (deux underscores).</summary>
+        public const string ExtraFolderPrefix = "__";
 
         /// <summary>Classe un nom de dossier selon la règle fixe ci-dessus (DLC l'emporte sur patch).</summary>
         public static ExtraFolderKind ClassifyExtraFolder(string folderName)
         {
             if (string.IsNullOrWhiteSpace(folderName)) return ExtraFolderKind.None;
+            // Sans les deux underscores, c'est un dossier du jeu comme un autre : jamais un extra.
+            if (!folderName.StartsWith(ExtraFolderPrefix, StringComparison.Ordinal)) return ExtraFolderKind.None;
             if (folderName.IndexOf("dlc", StringComparison.OrdinalIgnoreCase) >= 0) return ExtraFolderKind.Dlc;
             if (folderName.IndexOf("patch", StringComparison.OrdinalIgnoreCase) >= 0 ||
                 folderName.IndexOf("update", StringComparison.OrdinalIgnoreCase) >= 0)

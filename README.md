@@ -89,16 +89,16 @@ L'idée est d'obtenir une **expérience de type console** pour une collection pe
 - Une fenêtre ne réagit à la manette que lorsqu'elle est la fenêtre active : un appui sur B dans Playnite n'annule jamais une copie en arrière-plan.
 
 ### DLC et patchs
-Rangez les installeurs de DLC et de patchs dans des **sous-dossiers du dossier du jeu** :
+Rangez les DLC et les patchs dans des **sous-dossiers du dossier du jeu dont le nom commence par DEUX underscores (`__`)** :
 
 ```
 E:\Archives
 └── Cyberpunk 2077
     ├── setup_cyberpunk_2077.exe           ← le jeu
     ├── setup_cyberpunk_2077-1.bin         ← fichiers .bin GOG : à garder à côté de leur .exe
-    ├── DLC
+    ├── __DLC
     │   └── setup_cyberpunk_2077_phantom_liberty.exe
-    └── Patch
+    └── __Patch
         ├── patch_01_cyberpunk_2077_1.63.exe
         └── patch_02_cyberpunk_2077_2.1.exe
 ```
@@ -110,14 +110,19 @@ E:\Archives
 └── Mon Jeu
     ├── Mon Jeu.exe
     ├── data\...
-    └── DLC
+    └── __DLC
         └── Pack Texture HD               ← dossier de fichiers, sans installeur
             ├── data
             │   └── textures.pak          ← remplace data\textures.pak dans le jeu
             └── bonus.dll                 ← ajouté à la racine du jeu
 ```
 
-- Un sous-dossier dont le nom contient **« DLC »** est un dossier de DLC ; un sous-dossier dont le nom contient **« patch »** ou **« update »** est un dossier de patchs. Ces dossiers ne sont jamais pris pour un jeu ni pour l'installeur du jeu de base.
+- **La règle des deux underscores** (nouveau en 0.0.6) : un sous-dossier du jeu n'est un dossier d'extras que si son nom **commence par `__`** (deux underscores, sans espace avant) **et** contient :
+  - **« DLC »** : c'est un dossier de DLC ;
+  - **« patch »** (patch, patchs, patches, Patch_1.2… toutes les orthographes) ou **« update »** : c'est un dossier de patchs.
+  Majuscules et minuscules n'ont pas d'importance. Exemples : `__DLC`, `__DLC - Pack HD`, `__Patch`, `__Patch_01`, `__Patches`, `__Update 1.2`. Le mot DLC, patch ou update est obligatoire : `__Pack` ne serait pas reconnu.
+- **Pas de réglage, volontairement.** Beaucoup de jeux ont, dans leurs propres fichiers, un vrai dossier `DLC` ou `Patch` (des données du jeu). Sans les deux underscores, un dossier `DLC`, `Patch` ou `Update` est un dossier du jeu comme un autre : **il n'est jamais traité comme un extra**, et ArchiveStore n'y touche pas. Les deux underscores disent « ce dossier est un extra préparé pour ArchiveStore ».
+- Ces dossiers ne sont jamais pris pour un jeu ni pour l'installeur du jeu de base. Seuls les sous-dossiers **directs** du dossier du jeu comptent (un `__DLC` rangé plus profond n'est pas vu).
 - Après le jeu, les installeurs **reconnus** (Inno Setup, NSIS, MSI) sont lancés en silencieux, l'un après l'autre : **DLC d'abord, puis patchs**, chacun par ordre alphabétique. Les DLC et patchs **en fichiers simples** (sans installeur) sont **copiés** dans le dossier du jeu, dans le même ordre. **Dès qu'un échec survient, tout s'arrête** et le plugin dit lequel a échoué et lesquels n'ont pas été lancés.
 - **Nommez vos patchs pour qu'ils se classent dans l'ordre alphabétique des versions** : numéro en tête avec deux chiffres (`patch_01…`, `patch_02…`, `patch_10…`) ou version complète et régulière. Sinon `1.10` passerait avant `1.9`.
 - **Fichiers GOG** : gardez le `.exe` et ses fichiers `.bin` ensemble, dans le même dossier, avec leurs noms d'origine (ou renommez-les ensemble, en conservant le même début de nom). Les `.bin` ne sont pas lancés par le plugin : c'est l'installeur GOG qui les lit.
@@ -131,7 +136,7 @@ E:\Archives
 - Un fichier `.exe` dont le type n'est pas reconnu n'est **jamais lancé tout seul**. Il est proposé dans la fenêtre de choix (décoché, avec un avertissement) et s'ouvre avec sa propre fenêtre ; ensuite le plugin vous demande si l'installation s'est bien passée. Attention : cela ne vaut que pour un dossier qui contient un installeur (reconnu, ou nommé `setup`/`install`…). Un installeur personnalisé au nom différent, rangé seul dans un dossier de DLC ou de patchs, serait **copié** comme un fichier ordinaire : ajoutez son mot dans « Installeurs non reconnus » pour qu'il soit traité comme un installeur.
 - **Fenêtre de choix** (« Installation directe » décochée et « Demander confirmation avant d'installer les DLC et patchs » cochée, en mode Bureau comme en mode Plein écran) : une case par fichier pour choisir ce qui s'installe, et un bouton **« Déjà installés »** pour noter des extras installés avant cette version, sans rien réinstaller. Sans fenêtre (installation directe), tout s'installe automatiquement après le jeu.
 - **Après coup** : clic droit sur un jeu installé (en mode Plein écran : menu du jeu, `Extensions`), puis `Installer les DLC et patchs (ArchiveStore)` (un jeu à la fois). Seuls les extras pas encore installés sont proposés. S'il n'y a rien à installer (aucun DLC ou patch trouvé, ou tout est déjà installé), un message l'indique, et un toast aussi (catégorie « Confirmations de menu »).
-- **Nouveaux DLC et patchs détectés** : à chaque mise à jour de la bibliothèque, l'extension regarde, en arrière-plan, le dossier source de chaque jeu installé. S'il y a des DLC ou patchs qu'elle n'avait jamais vus, **une notification par jeu** l'indique (« 2 nouveaux DLC et 1 nouveau patch pour 'Mon jeu' »). Un **clic** ouvre la fenêtre des DLC et patchs de ce jeu, même avec « Installation directe » : rien ne s'installe sur un simple clic. Chaque fichier n'est signalé **qu'une seule fois**, même si vous ne l'installez pas. La première vérification d'un jeu ne signale rien : elle note seulement ce qui existe déjà. Seuls les jeux installés par un installeur reconnu, dont l'extension connaît les extras, sont surveillés. Les DLC et patchs en fichiers simples comptent aussi : après la mise à jour vers la 0.0.6, **une notification de nouveaux DLC et patchs peut donc apparaître une fois** pour des dossiers de fichiers qui existaient déjà. Désactivable dans les réglages.
+- **Nouveaux DLC et patchs détectés** : à chaque mise à jour de la bibliothèque, l'extension regarde, en arrière-plan, le dossier source de chaque jeu installé. S'il y a des DLC ou patchs qu'elle n'avait jamais vus, **une notification par jeu** l'indique (« 2 nouveaux DLC et 1 nouveau patch pour 'Mon jeu' »). Un **clic** ouvre la fenêtre des DLC et patchs de ce jeu, même avec « Installation directe » : rien ne s'installe sur un simple clic. Chaque fichier n'est signalé **qu'une seule fois**, même si vous ne l'installez pas. La première vérification d'un jeu ne signale rien : elle note seulement ce qui existe déjà. Seuls les jeux installés par un installeur reconnu, dont l'extension connaît les extras, sont surveillés. Les DLC et patchs en fichiers simples comptent aussi. Après avoir renommé vos dossiers en `__DLC` ou `__Patch`, **une notification de nouveaux DLC et patchs peut apparaître une fois** pour des extras déjà présents dans l'archive. Désactivable dans les réglages.
 - Un **jeu portable** est copié en entier, DLC et patchs compris, sans aucune détection.
 - Si l'espace manque pour le jeu et ses extras mais suffit pour le jeu seul, le jeu est installé et les extras sont ignorés (avec une notification).
 
@@ -188,8 +193,8 @@ E:\Archives                 ← dossier Source (de votre profil)
 ├── Cyberpunk 2077
 │   ├── setup_cyberpunk_2077.exe
 │   ├── setup_cyberpunk_2077-1.bin
-│   ├── DLC                 ← facultatif : installeurs de DLC
-│   ├── Patch               ← facultatif : installeurs de patchs
+│   ├── __DLC               ← facultatif : DLC (installeurs ou fichiers)
+│   ├── __Patch             ← facultatif : patchs (installeurs ou fichiers)
 │   ├── cover.jpg           ← facultatif : jaquette
 │   └── ...
 ├── Celeste                 ← jeu portable : le dossier est copié tel quel
@@ -219,7 +224,7 @@ C:\Jeux anciens             ← 2e destination (facultatif), pour un vieux jeu q
 4. Ouvrez `Paramètres > Extensions > ArchiveStore`, créez un profil, ajoutez-y au moins une source et une destination, et choisissez-le comme profil actif.
 5. Lancez `Bibliothèque > Mettre à jour les bibliothèques`.
 
-Mise à jour depuis une version précédente : remplacez les fichiers de l'extension et redémarrez Playnite. Vos réglages sont conservés. Les nouvelles cases (toasts) sont **cochées par défaut** : après la mise à jour, des toasts apparaissent en plus des notifications ; décochez-les dans le groupe « Toasts » si vous n'en voulez pas. Depuis la 0.0.6, les dossiers de DLC et de patchs **sans installeur** sont copiés dans le jeu (voir « DLC et patchs ») : vérifiez que les vôtres reflètent bien l'arborescence du jeu.
+Mise à jour depuis une version précédente : remplacez les fichiers de l'extension et redémarrez Playnite. Vos réglages sont conservés. Les nouvelles cases (toasts) sont **cochées par défaut** : après la mise à jour, des toasts apparaissent en plus des notifications ; décochez-les dans le groupe « Toasts » si vous n'en voulez pas. **Changement important de la 0.0.6 : les dossiers de DLC et de patchs doivent maintenant commencer par deux underscores** (`__DLC`, `__Patch`, `__Update`…). **Renommez vos dossiers `DLC`, `Patch` et `Update`** dans vos archives, sinon ils ne sont plus reconnus (voir « DLC et patchs »). Une fois renommés, leurs extras sont reproposés une fois, parce que la mémoire des extras installés retient leur ancien chemin : ouvrez `Installer les DLC et patchs (ArchiveStore)` sur le jeu, cochez ceux qui sont déjà installés et cliquez sur **« Déjà installés »**, sans rien réinstaller. Depuis la 0.0.6, les dossiers d'extras **sans installeur** sont copiés dans le jeu : vérifiez que les vôtres reflètent bien l'arborescence du jeu.
 
 ### Prérequis
 - Playnite 10+ (SDK 6.17)
@@ -260,7 +265,7 @@ Ce qui suit est une liste d'**intentions**, sans engagement de date ni d'ordre.
 - Les jaquettes sont téléchargées par Playnite avec ses propres sources ; l'extension ne peut pas le forcer. Elle améliore seulement le nom envoyé et accepte vos images locales.
 - Les installeurs exigeant les droits administrateur ne peuvent pas être silencieux. Pour Inno Setup, utilisez `PrivilegesRequired=lowest` dans votre script.
 - Un installeur **non reconnu** est lancé avec sa propre fenêtre et ne peut pas être forcé vers le bon dossier : c'est à vous de choisir exactement le dossier indiqué par le plugin. Le plugin ne peut pas savoir à lui seul que l'installation est terminée, c'est pourquoi il vous pose la question.
-- Les installeurs de DLC et de patchs doivent être rangés dans les sous-dossiers décrits plus haut, sinon un installeur posé à côté du jeu risque d'être pris pour un jeu.
+- Les DLC et patchs doivent être rangés dans des sous-dossiers directs du jeu dont le nom commence par `__` (voir plus haut). Un dossier `DLC` ou `Patch` sans les deux underscores n'est pas reconnu, et un installeur de DLC qui s'y trouverait pourrait être pris pour l'installeur du jeu.
 - Un jeu installé avant la 0.0.3 n'a pas de mémoire de ses DLC et patchs : le plugin les reproposera, et le bouton « Déjà installés » permet de les noter sans rien réinstaller. Tant que cette mémoire n'existe pas, le jeu n'est pas surveillé pour les nouveaux DLC et patchs.
 - Les **toasts** ne se cliquent pas (ils ne prennent jamais le focus) : pour agir, ouvrez la notification de Playnite. Ils sont réservés aux notifications d'une catégorie et aux erreurs.
 - La **veille bloquée** pendant une installation n'empêche que la veille automatique par inactivité : fermer le capot ou appuyer sur le bouton d'alimentation met toujours le PC en veille, et l'écran peut s'éteindre.
