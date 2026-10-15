@@ -251,4 +251,4 @@ GizeH
 
 ## Licence
 
-À définir.
+Licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
