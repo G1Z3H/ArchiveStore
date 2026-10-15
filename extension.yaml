@@ -1,0 +1,11 @@
+Id: ArchiveStore_7660910e-8cb7-429d-adf7-03edd5b9ee89
+Name: ArchiveStore
+Author: GizeH
+Version: 0.0.5
+Module: ArchiveStore.dll
+Type: GameLibrary
+Icon: icon.png
+Description: >
+  Bibliothèque personnelle archivée. Scanne automatiquement un dossier source,
+  détecte les jeux (portables ou avec installeur), et gère l'installation/
+  désinstallation comme un vrai store (Steam/Epic).

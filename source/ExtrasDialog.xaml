@@ -1,0 +1,98 @@
+<local:ConsoleWindow x:Class="ArchiveStore.ExtrasDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ArchiveStore"
+        Title="ArchiveStore — DLC et patchs"
+        Width="960">
+
+    <local:ConsoleWindow.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ConsoleStyle.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </local:ConsoleWindow.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>   <!-- 0 : contenu -->
+            <RowDefinition Height="Auto"/>   <!-- 1 : pied de fenêtre (touches, puis boutons) -->
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="40,32,40,24">
+            <local:ConsoleHeader x:Name="Header" Section="DLC et patchs"/>
+
+            <TextBlock x:Name="TitleText" Style="{StaticResource TitleStyle}"/>
+            <TextBlock x:Name="DescriptionText" Style="{StaticResource DescStyle}" Margin="0,12,0,16"/>
+
+            <!-- Bloc « choix + espace disque » -->
+            <Border Style="{StaticResource CardStyle}" Padding="20,14,20,16">
+                <StackPanel>
+                    <!-- Ligne « jeu » : masquée quand le jeu est déjà installé (menu clic droit) -->
+                    <TextBlock x:Name="GameSizeText" Style="{StaticResource ValueStyle}" Margin="0"/>
+
+                    <!-- Avertissement : jeu installé avant la mémoire des extras (menu clic droit) -->
+                    <TextBlock x:Name="MemoryWarning"
+                               Style="{StaticResource WarnOrangeStyle}"
+                               Margin="0,10,0,0"
+                               Visibility="Collapsed"/>
+
+                    <!-- Liste défilante (molette) : une case par installeur, groupée DLC / patchs -->
+                    <ScrollViewer MaxHeight="270"
+                                  Focusable="False"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel x:Name="ListPanel" Margin="0,0,6,0"/>
+                    </ScrollViewer>
+
+                    <TextBlock x:Name="TotalText" Style="{StaticResource ValueStyle}" FontWeight="SemiBold" Margin="0,14,0,0"/>
+                    <TextBlock x:Name="FreeText" Style="{StaticResource ValueStyle}"/>
+
+                    <!-- Jauge : part de l'espace libre qu'occupera la sélection (0 → 100 %) -->
+                    <ProgressBar x:Name="SpaceBar"
+                                 Minimum="0" Maximum="1" Value="0"
+                                 Height="11"
+                                 Margin="0,14,0,0"/>
+
+                    <TextBlock x:Name="SpaceWarning" Style="{StaticResource WarnRedStyle}" Visibility="Collapsed"/>
+                    <TextBlock x:Name="SizeNote" Style="{StaticResource NoteStyle}"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <!-- Pied de fenêtre sur DEUX lignes : les touches de la manette, puis les boutons. -->
+        <Border Grid.Row="1" Style="{StaticResource FooterStyle}">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <local:PadHint Pad="D" Label="Naviguer"/>
+                    <local:PadHint x:Name="HintA" Pad="A" Label="Cocher"/>
+                    <!-- X et Y servent aussi de boutons à la souris -->
+                    <local:PadHint Pad="X" Label="Tout cocher" Cursor="Hand" MouseLeftButtonUp="HintX_Click"/>
+                    <local:PadHint Pad="Y" Label="Tout décocher" Cursor="Hand" MouseLeftButtonUp="HintY_Click"/>
+                    <local:PadHint Pad="B" Label="Annuler"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                    <Button x:Name="BtnCancel"
+                            Content="Annuler"
+                            MinWidth="140"
+                            Margin="0,0,14,0"
+                            Click="BtnCancel_Click"/>
+                    <!-- Visible seulement dans le menu clic droit (jeu déjà installé) -->
+                    <Button x:Name="BtnMarkInstalled"
+                            Content="Déjà installés"
+                            MinWidth="160"
+                            Margin="0,0,14,0"
+                            Visibility="Collapsed"
+                            ToolTip="Note les extras cochés comme déjà installés, sans rien installer : ils ne seront plus proposés."
+                            Click="BtnMarkInstalled_Click"/>
+                    <Button x:Name="BtnInstall"
+                            Content="Installer"
+                            Style="{StaticResource PrimaryButton}"
+                            MinWidth="260"
+                            Click="BtnInstall_Click"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</local:ConsoleWindow>

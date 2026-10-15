@@ -1,0 +1,96 @@
+<local:ConsoleWindow x:Class="ArchiveStore.InstallDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ArchiveStore"
+        Title="ArchiveStore — Installation"
+        Width="860">
+
+    <!-- Le style « console » commun (voir ConsoleStyle.xaml). -->
+    <local:ConsoleWindow.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ConsoleStyle.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </local:ConsoleWindow.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>   <!-- 0 : contenu -->
+            <RowDefinition Height="Auto"/>   <!-- 1 : pied de fenêtre (touches + boutons) -->
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="40,32,40,24">
+            <local:ConsoleHeader x:Name="Header" Section="Installation"/>
+
+            <TextBlock x:Name="DiagnosticText" Style="{StaticResource TitleStyle}"/>
+            <TextBlock x:Name="FileText" Style="{StaticResource FileStyle}" Visibility="Collapsed"/>
+            <TextBlock x:Name="DescriptionText" Style="{StaticResource DescStyle}"/>
+
+            <!-- Bloc « espace disque » : destination, taille du jeu, espace libre, jauge, avertissements -->
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,18">
+                <StackPanel>
+                    <!-- PLUSIEURS DESTINATIONS : visible seulement si le profil en a plus d'une. -->
+                    <StackPanel x:Name="DestinationPanel" Visibility="Collapsed" Margin="0,0,0,16">
+                        <TextBlock Text="Destination d'installation" Style="{StaticResource LabelStyle}"/>
+                        <Button x:Name="BtnDestination"
+                                Style="{StaticResource SelectorButton}"
+                                Click="BtnDestination_Click">
+                            <TextBlock x:Name="DestinationLabel" TextTrimming="CharacterEllipsis"/>
+                        </Button>
+                    </StackPanel>
+
+                    <TextBlock x:Name="SizeText" Style="{StaticResource ValueStyle}" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="FreeText" Style="{StaticResource ValueStyle}"/>
+
+                    <!-- Jauge : part de l'espace libre qu'occupera le jeu (0 → 100 %) -->
+                    <ProgressBar x:Name="SpaceBar"
+                                 Minimum="0" Maximum="1" Value="0"
+                                 Height="11"
+                                 Margin="0,14,0,0"/>
+
+                    <TextBlock x:Name="SpaceWarning" Style="{StaticResource WarnRedStyle}" Visibility="Collapsed"/>
+                    <TextBlock x:Name="SizeNote" Style="{StaticResource NoteStyle}" Visibility="Collapsed"/>
+                </StackPanel>
+            </Border>
+
+            <RadioButton x:Name="RadioInstaller" Content="Exécuter l'installeur"/>
+
+            <!-- Cas ambigu seulement : rappel du dossier à choisir dans l'installeur. -->
+            <TextBlock x:Name="InstallerHint" Style="{StaticResource OptionHintStyle}" Visibility="Collapsed"/>
+
+            <!-- Cas ambigu en mode Plein écran seulement : avertissement clavier / souris. -->
+            <TextBlock x:Name="InstallerFullscreenWarning"
+                       Style="{StaticResource OptionWarnStyle}"
+                       Margin="18,-8,0,14"
+                       Visibility="Collapsed"/>
+
+            <RadioButton x:Name="RadioCopy" Content="Copier le dossier (jeu portable)"/>
+
+            <!-- Cas ambigu seulement : mise en garde près de l'option Copier. -->
+            <TextBlock x:Name="CopyWarning" Style="{StaticResource OptionWarnStyle}" Visibility="Collapsed"/>
+        </StackPanel>
+
+        <Border Grid.Row="1" Style="{StaticResource FooterStyle}">
+            <DockPanel LastChildFill="True">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button x:Name="BtnCancel"
+                            Content="Annuler"
+                            MinWidth="140"
+                            Margin="0,0,14,0"
+                            Click="BtnCancel_Click"/>
+                    <Button x:Name="BtnConfirm"
+                            Content="Installer"
+                            Style="{StaticResource PrimaryButton}"
+                            MinWidth="170"
+                            Click="BtnConfirm_Click"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <local:PadHint Pad="D" Label="Naviguer"/>
+                    <local:PadHint x:Name="HintA" Pad="A" Label="Valider"/>
+                    <local:PadHint Pad="B" Label="Annuler"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</local:ConsoleWindow>

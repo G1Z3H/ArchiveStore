@@ -1,0 +1,47 @@
+<local:ConsoleWindow x:Class="ArchiveStore.ConsoleConfirmDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ArchiveStore"
+        Title="ArchiveStore"
+        Width="760">
+
+    <local:ConsoleWindow.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ConsoleStyle.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </local:ConsoleWindow.Resources>
+
+    <!--
+        Remplace les MessageBox Windows (barre blanche, boutons non manette) pour les questions
+        « Oui / Non » posées par nos propres fenêtres. Le bouton « Non » a le focus à l'ouverture :
+        un appui trop vif sur A ne peut donc rien détruire.
+    -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="40,32,40,26">
+            <local:ConsoleHeader Section="Confirmation"/>
+            <TextBlock x:Name="TitleText" Style="{StaticResource TitleStyle}"/>
+            <TextBlock x:Name="MessageText" Style="{StaticResource DescStyle}" Margin="0,14,0,0"/>
+        </StackPanel>
+
+        <Border Grid.Row="1" Style="{StaticResource FooterStyle}">
+            <DockPanel LastChildFill="True">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button x:Name="BtnNo" Content="Non" MinWidth="160" Margin="0,0,14,0" Click="BtnNo_Click"/>
+                    <Button x:Name="BtnYes" Content="Oui" MinWidth="160" Click="BtnYes_Click"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <local:PadHint Pad="H" Label="Choisir"/>
+                    <local:PadHint Pad="A" Label="Valider"/>
+                    <local:PadHint x:Name="HintB" Pad="B" Label="Non"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</local:ConsoleWindow>

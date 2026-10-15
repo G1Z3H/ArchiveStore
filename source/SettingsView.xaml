@@ -1,0 +1,587 @@
+<UserControl x:Class="ArchiveStore.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             FontFamily="Segoe UI"
+             FontSize="13"
+             Background="#1e1e2e"
+             Foreground="#cdd6f4">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
+        <StackPanel>
+
+            <!-- ============ SECTION 1 : PROFILS ============ -->
+            <TextBlock Text="PROFILS"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="#89b4fa"
+                       Margin="0,0,0,8"/>
+
+            <TextBlock Text="Un profil regroupe une ou plusieurs SOURCES (dossiers d'archives) et une ou plusieurs DESTINATIONS (dossiers d'installation). Sélectionnez un profil dans la liste pour modifier ses sources et ses destinations ci-dessous."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,10"/>
+
+            <DataGrid x:Name="ProfilesGrid"
+                      SelectionMode="Single"
+                      SelectionChanged="ProfilesGrid_SelectionChanged"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      CanUserResizeRows="False"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="#45475a"
+                      Background="#313244"
+                      RowBackground="#313244"
+                      AlternatingRowBackground="#2a2a3c"
+                      Foreground="#cdd6f4"
+                      BorderBrush="#45475a"
+                      BorderThickness="1"
+                      MinHeight="110"
+                      MaxHeight="220"
+                      Margin="0,0,0,8">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Nom du profil"
+                                        Binding="{Binding Name}"
+                                        Width="*"/>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                <Button x:Name="BtnAjouterProfil"
+                        Content="Ajouter un profil"
+                        Width="160" Height="36"
+                        Margin="0,0,8,0"
+                        FontSize="13"
+                        Click="BtnAjouterProfil_Click"/>
+                <Button x:Name="BtnSupprimerProfil"
+                        Content="Supprimer la sélection"
+                        Width="180" Height="36"
+                        FontSize="13"
+                        Click="BtnSupprimerProfil_Click"/>
+            </StackPanel>
+
+            <!-- ============ SOURCES ET DESTINATIONS DU PROFIL SÉLECTIONNÉ ============ -->
+            <StackPanel x:Name="EditorsPanel" Margin="0,0,0,8">
+
+                <TextBlock x:Name="TxtSourcesTitle"
+                           Text="SOURCES DU PROFIL"
+                           FontSize="14" FontWeight="Bold"
+                           Foreground="#89b4fa"
+                           Margin="0,0,0,4"/>
+                <TextBlock Text="Dossiers contenant un sous-dossier par jeu. Vous pouvez en déclarer plusieurs (plusieurs disques, un NAS…) : tous les jeux sont réunis dans la bibliothèque. L'ordre compte : si le même jeu existe dans deux sources, la PREMIÈRE gagne. Une source inaccessible (disque débranché) est signalée par une notification, sans bloquer les autres."
+                           Foreground="#a6adc8" FontSize="12"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,8"/>
+
+                <DataGrid x:Name="SourcesGrid"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          CanUserResizeRows="False"
+                          CanUserSortColumns="False"
+                          SelectionMode="Single"
+                          HeadersVisibility="Column"
+                          GridLinesVisibility="Horizontal"
+                          HorizontalGridLinesBrush="#45475a"
+                          Background="#313244"
+                          RowBackground="#313244"
+                          AlternatingRowBackground="#2a2a3c"
+                          Foreground="#cdd6f4"
+                          BorderBrush="#45475a"
+                          BorderThickness="1"
+                          MinHeight="70"
+                          MaxHeight="180"
+                          Margin="0,0,0,6">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="Dossier source (archives)" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox Grid.Column="0"
+                                                 Text="{Binding Folder, UpdateSourceTrigger=PropertyChanged}"
+                                                 VerticalContentAlignment="Center"
+                                                 Background="Transparent"
+                                                 Foreground="#cdd6f4"
+                                                 BorderThickness="0"/>
+                                        <Button Grid.Column="1"
+                                                Content="…"
+                                                Width="28"
+                                                Margin="4,0,0,0"
+                                                ToolTip="Choisir le dossier source"
+                                                Click="BtnBrowseSourceRow_Click"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,18">
+                    <Button Content="Ajouter une source…" Width="170" Height="32" Margin="0,0,8,0"
+                            Click="BtnAddSource_Click"/>
+                    <Button Content="Supprimer" Width="100" Height="32" Margin="0,0,8,0"
+                            Click="BtnRemoveSource_Click"/>
+                    <Button Content="▲" Width="40" Height="32" Margin="0,0,8,0"
+                            ToolTip="Monter (priorité plus haute)"
+                            Click="BtnSourceUp_Click"/>
+                    <Button Content="▼" Width="40" Height="32"
+                            ToolTip="Descendre (priorité plus basse)"
+                            Click="BtnSourceDown_Click"/>
+                </StackPanel>
+
+                <TextBlock x:Name="TxtDestinationsTitle"
+                           Text="DESTINATIONS DU PROFIL"
+                           FontSize="14" FontWeight="Bold"
+                           Foreground="#89b4fa"
+                           Margin="0,0,0,4"/>
+                <TextBlock Text="Dossiers où les jeux sont installés (un sous-dossier par jeu). La PREMIÈRE destination est celle par défaut. Avec plusieurs destinations, la fenêtre d'installation vous laisse choisir, et le clic droit sur un jeu non installé permet de lui affecter une destination à l'avance (utile pour un vieux jeu qui exige le disque Windows). Le nom est facultatif : il sert seulement à vous y retrouver."
+                           Foreground="#a6adc8" FontSize="12"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,8"/>
+
+                <DataGrid x:Name="DestinationsGrid"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          CanUserResizeRows="False"
+                          CanUserSortColumns="False"
+                          SelectionMode="Single"
+                          HeadersVisibility="Column"
+                          GridLinesVisibility="Horizontal"
+                          HorizontalGridLinesBrush="#45475a"
+                          Background="#313244"
+                          RowBackground="#313244"
+                          AlternatingRowBackground="#2a2a3c"
+                          Foreground="#cdd6f4"
+                          BorderBrush="#45475a"
+                          BorderThickness="1"
+                          MinHeight="70"
+                          MaxHeight="180"
+                          Margin="0,0,0,6">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Nom (facultatif)"
+                                            Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
+                                            Width="160"/>
+                        <DataGridTemplateColumn Header="Dossier de destination (installations)" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox Grid.Column="0"
+                                                 Text="{Binding FolderPath, UpdateSourceTrigger=PropertyChanged}"
+                                                 VerticalContentAlignment="Center"
+                                                 Background="Transparent"
+                                                 Foreground="#cdd6f4"
+                                                 BorderThickness="0"/>
+                                        <Button Grid.Column="1"
+                                                Content="…"
+                                                Width="28"
+                                                Margin="4,0,0,0"
+                                                ToolTip="Choisir le dossier de destination"
+                                                Click="BtnBrowseDestinationRow_Click"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
+                    <Button Content="Ajouter une destination…" Width="190" Height="32" Margin="0,0,8,0"
+                            Click="BtnAddDestination_Click"/>
+                    <Button Content="Supprimer" Width="100" Height="32" Margin="0,0,8,0"
+                            Click="BtnRemoveDestination_Click"/>
+                    <Button Content="▲" Width="40" Height="32" Margin="0,0,8,0"
+                            ToolTip="Monter (la première est la destination par défaut)"
+                            Click="BtnDestinationUp_Click"/>
+                    <Button Content="▼" Width="40" Height="32"
+                            ToolTip="Descendre"
+                            Click="BtnDestinationDown_Click"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- ============ SECTION 2 : PROFIL ACTIF ============ -->
+            <TextBlock Text="PROFIL ACTIF"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="#89b4fa"
+                       Margin="0,8,0,12"/>
+
+            <TextBlock Text="Profil utilisé pour alimenter la bibliothèque :"
+                       Foreground="#a6adc8"
+                       Margin="0,0,0,6"/>
+
+            <ComboBox x:Name="ComboActif"
+                      Height="34"
+                      FontSize="13"
+                      Background="#313244"
+                      Foreground="#cdd6f4"
+                      BorderBrush="#45475a"/>
+
+            <!-- ============ SECTION : COMPORTEMENT « CONSOLE » ============ -->
+            <TextBlock Text="COMPORTEMENT"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="#89b4fa"
+                       Margin="0,24,0,12"/>
+
+            <CheckBox x:Name="ChkDirectInstall"
+                      Content="Installation directe : aucune fenêtre, tout s'installe automatiquement"
+                      Foreground="#cdd6f4"
+                      Margin="0,0,0,6"/>
+            <TextBlock Text="Un clic sur Installer lance tout : le jeu est installé dans la destination par défaut du profil actif (ou celle choisie à l'avance par clic droit), avec le mode et l'exécutable détectés automatiquement, puis tous les DLC et patchs reconnus trouvés dans le dossier du jeu. Les fichiers non reconnus ne sont jamais lancés. Décochez pour choisir à chaque fois dans des fenêtres (destination, DLC et patchs), en mode Bureau comme en mode Plein écran."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="22,0,0,12"/>
+
+            <CheckBox x:Name="ChkCleanNames"
+                      Content="Nettoyer les noms de jeux (aide Playnite à retrouver jaquettes et descriptions)"
+                      Foreground="#cdd6f4"
+                      Margin="0,0,0,6"/>
+            <TextBlock Text="Ex. « Jeu_v1.2.3 [GOG] » s'affiche « Jeu ». Les dossiers ne sont jamais renommés. S'applique aux nouveaux jeux détectés."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="22,0,0,0"/>
+
+            <!-- Rythme de mise à jour de la progression (fenêtre ET notifications) -->
+            <TextBlock Text="Mise à jour de la progression d'une installation :"
+                       Foreground="#cdd6f4"
+                       Margin="0,16,0,6"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                <Slider x:Name="SldProgressInterval"
+                        Minimum="2" Maximum="10"
+                        TickFrequency="1"
+                        IsSnapToTickEnabled="True"
+                        TickPlacement="BottomRight"
+                        Width="260"
+                        VerticalAlignment="Center"/>
+                <TextBlock x:Name="TxtProgressInterval"
+                           Foreground="#89b4fa" FontWeight="SemiBold"
+                           VerticalAlignment="Center"
+                           Margin="14,0,0,0"/>
+            </StackPanel>
+            <TextBlock Text="Valable pour la fenêtre de progression ET pour les notifications (installation directe), pour le jeu comme pour ses DLC et patchs. Petit chiffre = affichage plus vivant ; grand chiffre = plus doux pour une machine ou un disque lent."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,0"/>
+
+            <!-- ============ SECTION : NOTIFICATIONS ============ -->
+            <!-- Une case par catégorie (toutes cochées par défaut). Les ERREURS et blocages n'ont PAS de case :
+                 elles s'affichent toujours (voir PluginSettings.IsNotificationAllowed). -->
+            <TextBlock Text="NOTIFICATIONS"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="#89b4fa"
+                       Margin="0,24,0,12"/>
+
+            <TextBlock Text="Choisissez les notifications que vous voulez voir. Les erreurs et les blocages (échec d'installation, espace insuffisant, exécutable introuvable…) s'affichent toujours : elles ne peuvent pas être désactivées."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,12"/>
+
+            <CheckBox x:Name="ChkNotifyNewExtras"
+                      Content="Nouveaux DLC et patchs"
+                      FontWeight="SemiBold"
+                      Foreground="#cdd6f4"
+                      Margin="0,0,0,4"/>
+            <TextBlock Text="Prévient quand des DLC ou des patchs apparaissent dans le dossier d'un jeu installé. Cliquer sur la notification ouvre la fenêtre où vous choisissez ce que vous voulez installer. La vérification se fait à chaque mise à jour de la bibliothèque."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="22,0,0,12"/>
+
+            <CheckBox x:Name="ChkNotifyMissingPaths"
+                      Content="Source ou destination absente"
+                      FontWeight="SemiBold"
+                      Foreground="#cdd6f4"
+                      Margin="0,0,0,4"/>
+            <TextBlock Text="Prévient à la mise à jour de la bibliothèque quand un disque ou un partage réseau n'est pas accessible. Décochez si vous débranchez volontairement un disque."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="22,0,0,12"/>
+
+            <CheckBox x:Name="ChkNotifyDuplicates"
+                      Content="Doublons entre sources"
+                      FontWeight="SemiBold"
+                      Foreground="#cdd6f4"
+                      Margin="0,0,0,4"/>
+            <TextBlock Text="Prévient quand le même dossier de jeu existe dans plusieurs sources (la première source est utilisée)."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="22,0,0,12"/>
+
+            <CheckBox x:Name="ChkNotifySummaries"
+                      Content="Résumés de fin"
+                      FontWeight="SemiBold"
+                      Foreground="#cdd6f4"
+                      Margin="0,0,0,4"/>
+            <TextBlock Text="Confirme la fin d'une opération : jeu installé, désinstallé, installation annulée, DLC et patchs terminés."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="22,0,0,12"/>
+
+            <CheckBox x:Name="ChkNotifyInstallInfo"
+                      Content="Infos pendant l'installation"
+                      FontWeight="SemiBold"
+                      Foreground="#cdd6f4"
+                      Margin="0,0,0,4"/>
+            <TextBlock Text="Donne des précisions pendant l'installation : exécutable choisi automatiquement ou mémorisé, destination de secours utilisée, avancement d'une installation directe. L'avancement d'une copie, qui permet de l'annuler d'un clic, reste toujours affiché."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="22,0,0,12"/>
+
+            <CheckBox x:Name="ChkNotifyMenu"
+                      Content="Confirmations de menu"
+                      FontWeight="SemiBold"
+                      Foreground="#cdd6f4"
+                      Margin="0,0,0,4"/>
+            <TextBlock Text="Confirme vos actions dans les menus : profil activé, destination mémorisée, exécutable réassocié."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="22,0,0,0"/>
+
+            <!-- ============ SECTION : TOASTS ============ -->
+            <!-- Petites cartes au premier plan, EN PLUS des notifications (jamais à leur place). Tout est coché
+                 par défaut. Une case « toast » se grise quand la notification correspondante est décochée. -->
+            <TextBlock Text="TOASTS"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="#89b4fa"
+                       Margin="0,24,0,12"/>
+
+            <TextBlock Text="Un toast est une petite carte qui s'affiche en bas à droite de l'écran, au premier plan, sans jamais prendre le focus : elle apparaît même par-dessus un jeu sans le gêner, puis disparaît toute seule après quelques secondes. Elle s'ajoute à la notification de Playnite (elle ne la remplace pas) et ne se clique pas : pour agir, ouvrez la notification. Un toast n'apparaît que si la notification correspondante est cochée plus haut."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,12"/>
+
+            <TextBlock Text="Afficher aussi en toast :"
+                       FontWeight="SemiBold"
+                       Foreground="#cdd6f4"
+                       Margin="0,0,0,6"/>
+
+            <CheckBox x:Name="ChkToastNewExtras"
+                      Content="Nouveaux DLC et patchs"
+                      Foreground="#cdd6f4"
+                      Margin="0,0,0,6"/>
+            <CheckBox x:Name="ChkToastMissingPaths"
+                      Content="Source ou destination absente"
+                      Foreground="#cdd6f4"
+                      Margin="0,0,0,6"/>
+            <CheckBox x:Name="ChkToastDuplicates"
+                      Content="Doublons entre sources"
+                      Foreground="#cdd6f4"
+                      Margin="0,0,0,6"/>
+            <CheckBox x:Name="ChkToastSummaries"
+                      Content="Résumés de fin"
+                      Foreground="#cdd6f4"
+                      Margin="0,0,0,6"/>
+            <CheckBox x:Name="ChkToastInstallInfo"
+                      Content="Infos pendant l'installation"
+                      Foreground="#cdd6f4"
+                      Margin="0,0,0,6"/>
+            <CheckBox x:Name="ChkToastMenu"
+                      Content="Confirmations de menu"
+                      Foreground="#cdd6f4"
+                      Margin="0,0,0,6"/>
+            <CheckBox x:Name="ChkToastErrors"
+                      Content="Erreurs et blocages"
+                      Foreground="#cdd6f4"
+                      Margin="0,0,0,4"/>
+            <TextBlock Text="Les erreurs restent toujours en notification : cette case ajoute seulement un toast."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="22,0,0,14"/>
+
+            <CheckBox x:Name="ChkToastsDuringGame"
+                      Content="Y compris pendant une partie"
+                      FontWeight="SemiBold"
+                      Foreground="#cdd6f4"
+                      Margin="0,0,0,4"/>
+            <TextBlock Text="Cochée : les toasts s'affichent aussi par-dessus un jeu en cours, sans lui prendre le clavier ni la manette. Décochée : un toast n'apparaît que si Playnite est au premier plan et qu'aucun jeu n'est en cours de lancement ou d'exécution."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="22,0,0,14"/>
+
+            <TextBlock Text="Quand plusieurs toasts arrivent en même temps :"
+                       FontWeight="SemiBold"
+                       Foreground="#cdd6f4"
+                       Margin="0,0,0,6"/>
+            <RadioButton x:Name="RbToastQueue"
+                         GroupName="ToastMode"
+                         Content="L'un après l'autre : le suivant apparaît quand le précédent a disparu"
+                         Foreground="#cdd6f4"
+                         Margin="0,0,0,4"/>
+            <RadioButton x:Name="RbToastStack"
+                         GroupName="ToastMode"
+                         Content="Superposés : jusqu'à quatre à la fois, les uns au-dessus des autres"
+                         Foreground="#cdd6f4"
+                         Margin="0,0,0,12"/>
+
+            <Button x:Name="BtnTestToast"
+                    Content="Afficher des toasts de test"
+                    Width="230" Height="32"
+                    HorizontalAlignment="Left"
+                    Click="BtnTestToast_Click"/>
+            <TextBlock Text="Montre trois toasts avec vos réglages actuels (« pendant une partie » et la disposition), sans tenir compte des cases ci-dessus."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="0,6,0,0"/>
+
+            <!-- ============ SECTION : DLC ET PATCHS ============ -->
+            <TextBlock Text="DLC ET PATCHS"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="#89b4fa"
+                       Margin="0,24,0,12"/>
+
+            <CheckBox x:Name="ChkConfirmExtras"
+                      Content="Demander confirmation avant d'installer les DLC et patchs"
+                      Foreground="#cdd6f4"
+                      Margin="0,0,0,6"/>
+            <TextBlock Text="Grisée quand « Installation directe » est cochée : sans fenêtre, les DLC et patchs trouvés s'installent toujours automatiquement, après le jeu."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="22,0,0,12"/>
+
+            <TextBlock Text="Comment ils sont repérés : dans le dossier d'un jeu, un sous-dossier dont le nom contient « DLC » est un dossier de DLC ; un sous-dossier dont le nom contient « patch » (patch, patchs, patches…) ou « update » est un dossier de patchs. Ces sous-dossiers sont ignorés pour trouver l'installeur du jeu. Les installeurs reconnus qu'ils contiennent sont lancés en silencieux après le jeu (DLC d'abord, puis patchs) ; dès qu'un échoue, tout s'arrête. Un jeu portable est copié en entier, DLC et patchs compris. Un fichier d'un type non reconnu (ni Inno Setup, ni NSIS, ni MSI) n'est jamais lancé tout seul : il est proposé dans la fenêtre de choix (décoché), après un avertissement, et s'ouvre avec sa propre fenêtre d'installation ; à sa fermeture, le plugin vous demande si l'installation s'est bien passée."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,8"/>
+            <TextBlock Text="Dans la fenêtre de confirmation, une case par fichier (DLC, puis patchs) permet de choisir ce qui s'installe. Sur un jeu déjà installé : clic droit (en mode Plein écran : menu du jeu → Extensions) → « Installer les DLC et patchs (ArchiveStore) » ; seuls les extras pas encore installés sont proposés. Quand de nouveaux DLC ou patchs apparaissent dans le dossier d'un jeu installé, une notification vous le dit (voir le groupe « Notifications »). Pour un jeu installé avant cette version, le plugin ne sait pas quels extras sont déjà installés et les reproposera : cochez-les dans cette fenêtre et cliquez sur « Déjà installés » pour les noter sans rien réinstaller. Détails dans le fichier archivestore.log."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,0"/>
+
+            <!-- ============ SECTION : INSTALLEURS NON RECONNUS (CAS AMBIGU) ============ -->
+            <TextBlock Text="INSTALLEURS NON RECONNUS (CAS AMBIGU)"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="#89b4fa"
+                       Margin="0,24,0,12"/>
+
+            <TextBlock Text="Quand aucun installeur n'est reconnu dans le dossier d'un jeu (ni Inno Setup, ni NSIS, ni MSI), un fichier dont le nom commence par « setup » ou « install » rend la situation ambiguë : une fenêtre vous demande d'installer, de copier ou d'annuler, en mode Bureau comme en mode Plein écran (même avec « Installation directe »). En mode Plein écran, la fenêtre prévient que l'installeur a sa propre fenêtre, qui ne se commande pas à la manette : gardez un clavier et une souris à portée de main. Un installeur reconnu reste toujours prioritaire : ces mots ne servent qu'à déclencher ce cas ambigu."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,12"/>
+
+            <TextBlock Text="Mots d'installeur supplémentaires (un par ligne, en plus de « setup » et « install ») :"
+                       Foreground="#a6adc8"
+                       Margin="0,0,0,6"/>
+            <TextBox x:Name="TxtInstallerWords"
+                     Height="70" FontSize="13"
+                     Background="#313244" Foreground="#cdd6f4"
+                     BorderBrush="#45475a"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto"
+                     Padding="6"
+                     Margin="0,0,0,12"/>
+
+            <CheckBox x:Name="ChkWordsAnywhere"
+                      Content="Chercher ces mots n'importe où dans le nom du fichier"
+                      Foreground="#cdd6f4"
+                      Margin="0,0,0,6"/>
+            <TextBlock Text="Décochée (par défaut) : seul le DÉBUT du nom compte (« setup.exe », « install_jeu.exe »). Cochée : le mot peut être n'importe où (« jeu_setup.exe »). S'applique à tous les mots : « setup », « install » et ceux ajoutés."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="22,0,0,8"/>
+            <TextBlock Text="⚠ Ces mots sont distincts de la liste d'exclusions plus bas, qui CACHE des fichiers. Si un jeu portable contient un « setup.exe » qui n'est qu'un outil de réglages et déclenche ce cas à tort, ajoutez son nom à la liste d'exclusions : il sera ignoré et le jeu copié sans question."
+                       Foreground="#fab387" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,0"/>
+
+            <!-- ============ SECTION 3 : ARGUMENTS SILENCIEUX ============ -->
+            <TextBlock Text="ARGUMENTS D'INSTALLATION SILENCIEUSE"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="#89b4fa"
+                       Margin="0,24,0,12"/>
+
+            <TextBlock Text="Inno Setup (ex. /VERYSILENT /SUPPRESSMSGBOXES /NORESTART) :"
+                       Foreground="#a6adc8"
+                       Margin="0,0,0,4"/>
+            <TextBox x:Name="TxtInno"
+                     Height="32" FontSize="13"
+                     Background="#313244" Foreground="#cdd6f4"
+                     BorderBrush="#45475a"
+                     VerticalContentAlignment="Center"
+                     Padding="6,0"
+                     Margin="0,0,0,12"/>
+
+            <TextBlock Text="NSIS (ex. /S) :"
+                       Foreground="#a6adc8"
+                       Margin="0,0,0,4"/>
+            <TextBox x:Name="TxtNsis"
+                     Height="32" FontSize="13"
+                     Background="#313244" Foreground="#cdd6f4"
+                     BorderBrush="#45475a"
+                     VerticalContentAlignment="Center"
+                     Padding="6,0"
+                     Margin="0,0,0,12"/>
+
+            <TextBlock Text="MSI (ex. /qn /norestart) — appliqué via msiexec :"
+                       Foreground="#a6adc8"
+                       Margin="0,0,0,4"/>
+            <TextBox x:Name="TxtMsi"
+                     Height="32" FontSize="13"
+                     Background="#313244" Foreground="#cdd6f4"
+                     BorderBrush="#45475a"
+                     VerticalContentAlignment="Center"
+                     Padding="6,0"
+                     Margin="0,0,0,12"/>
+
+            <!-- ============ SECTION 4 : EXCLUSIONS .EXE ============ -->
+            <TextBlock Text="EXCLUSIONS D'EXÉCUTABLES (un par ligne)"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="#89b4fa"
+                       Margin="0,24,0,12"/>
+
+            <TextBlock Text="Préfixes de noms .exe ignorés (non considérés comme des jeux) :"
+                       Foreground="#a6adc8"
+                       Margin="0,0,0,6"/>
+            <TextBox x:Name="TxtExclusions"
+                     Height="90" FontSize="13"
+                     Background="#313244" Foreground="#cdd6f4"
+                     BorderBrush="#45475a"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto"
+                     Padding="6"
+                     Margin="0,0,0,12"/>
+
+            <!-- ============ SECTION 5 : PROTECTION DES SAVES ============ -->
+            <TextBlock Text="DOSSIERS DE SAUVEGARDE À CONSERVER (un par ligne)"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="#89b4fa"
+                       Margin="0,24,0,12"/>
+
+            <TextBlock Text="Sous-dossiers non supprimés lors d'une désinstallation (vide = tout supprimer) :"
+                       Foreground="#a6adc8"
+                       Margin="0,0,0,6"/>
+            <TextBox x:Name="TxtSaves"
+                     Height="90" FontSize="13"
+                     Background="#313244" Foreground="#cdd6f4"
+                     BorderBrush="#45475a"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto"
+                     Padding="6"/>
+
+            <!-- ============ SECTION 6 : JOURNAL ============ -->
+            <TextBlock Text="JOURNAL"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="#89b4fa"
+                       Margin="0,24,0,12"/>
+
+            <Button x:Name="BtnOpenLog"
+                    Content="Ouvrir le journal"
+                    Width="170" Height="32"
+                    HorizontalAlignment="Left"
+                    Click="BtnOpenLog_Click"/>
+            <TextBlock Text="Ouvre le dossier où se trouve archivestore.log, le journal détaillé de l'extension (à joindre en cas de problème)."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="0,8,0,0"/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
