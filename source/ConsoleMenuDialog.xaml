@@ -1,0 +1,69 @@
+<local:ConsoleWindow x:Class="ArchiveStore.ConsoleMenuDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ArchiveStore"
+        Title="ArchiveStore"
+        Width="860">
+
+    <local:ConsoleWindow.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ConsoleStyle.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </local:ConsoleWindow.Resources>
+
+    <!--
+        Petit menu de choix réutilisable : une question, une liste de réponses.
+        Sert aussi de « boîte de message » avec un seul choix « OK ».
+        Haut/bas = changer de ligne, A = choisir, B = retour.
+    -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="40,32,40,24">
+            <local:ConsoleHeader x:Name="Header" Section="Choix"/>
+
+            <TextBlock x:Name="TitleText" Style="{StaticResource TitleStyle}" TextWrapping="Wrap"/>
+
+            <TextBlock x:Name="MessageText" Style="{StaticResource DescStyle}" Margin="0,10,0,16"/>
+
+            <ListBox x:Name="ChoiceList"
+                     MaxHeight="420"
+                     SelectionMode="Single"
+                     MouseLeftButtonUp="ChoiceList_MouseLeftButtonUp">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel>
+                            <TextBlock Text="{Binding Label}" FontSize="17" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding Detail}"
+                                       Visibility="{Binding DetailVisibility}"
+                                       FontSize="13.5"
+                                       Opacity="0.75"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </StackPanel>
+
+        <Border Grid.Row="1" Style="{StaticResource FooterStyle}">
+            <DockPanel LastChildFill="True">
+                <Button x:Name="BtnCancel"
+                        DockPanel.Dock="Right"
+                        Content="Retour"
+                        MinWidth="140"
+                        Click="BtnCancel_Click"/>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <local:PadHint Pad="D" Label="Naviguer"/>
+                    <local:PadHint Pad="A" Label="Choisir"/>
+                    <local:PadHint x:Name="HintB" Pad="B" Label="Retour"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</local:ConsoleWindow>

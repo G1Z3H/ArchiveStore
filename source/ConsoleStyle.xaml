@@ -557,4 +557,99 @@
         </Setter>
     </Style>
 
+
+    <!-- ============ LIGNES DE RÉGLAGE ET CATÉGORIES (fenêtre de réglages console) ============ -->
+    <!--
+        RowButton : une ligne de réglage cliquable (valeur à changer, action, élément d'une liste). Comme les autres
+        éléments « console », c'est le halo bleu (IsKeyboardFocused) qui montre où l'on est à la manette.
+        Pas de BasedOn : cette ligne n'hérite donc ni de la hauteur fixe ni de la largeur minimale des gros boutons.
+    -->
+    <Style x:Key="RowButton" TargetType="Button">
+        <Setter Property="FontSize" Value="16.5"/>
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+        <Setter Property="Margin" Value="0,0,0,8"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd"
+                            Background="{StaticResource LineBrush}"
+                            BorderBrush="{StaticResource Line2Brush}"
+                            BorderThickness="2"
+                            CornerRadius="12"
+                            Padding="16,12">
+                        <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource FocusBgBrush}"/>
+                            <Setter TargetName="Bd" Property="Effect" Value="{StaticResource GlowEffect}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
+        NavButton : une catégorie de la colonne de gauche. La catégorie AFFICHÉE à droite est repérée par
+        Tag="sel" (posé par le code de la fenêtre) : fond plus clair et petite flèche. Le halo bleu, lui,
+        montre où est le focus (la manette) : les deux peuvent être sur la même ligne ou non.
+    -->
+    <Style x:Key="NavButton" TargetType="Button">
+        <Setter Property="FontSize" Value="17"/>
+        <Setter Property="Foreground" Value="{StaticResource DimBrush}"/>
+        <Setter Property="Margin" Value="0,0,0,6"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd"
+                            Background="Transparent"
+                            BorderBrush="Transparent"
+                            BorderThickness="2"
+                            CornerRadius="12"
+                            Padding="18,13">
+                        <DockPanel>
+                            <TextBlock x:Name="Chev"
+                                       DockPanel.Dock="Right"
+                                       Text="›"
+                                       FontSize="20"
+                                       Foreground="{StaticResource AccentBrush}"
+                                       VerticalAlignment="Center"
+                                       Visibility="Hidden"/>
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource LineBrush}"/>
+                        </Trigger>
+                        <Trigger Property="Tag" Value="sel">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource FocusBgBrush}"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Line2Brush}"/>
+                            <Setter TargetName="Chev" Property="Visibility" Value="Visible"/>
+                            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource FocusBgBrush}"/>
+                            <Setter TargetName="Bd" Property="Effect" Value="{StaticResource GlowEffect}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
 </ResourceDictionary>

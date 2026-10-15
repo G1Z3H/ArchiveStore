@@ -358,6 +358,17 @@ namespace ArchiveStore
             get { return (DateTime.UtcNow - _readyAtUtc).TotalMilliseconds >= IgnorePadAfterOpenMs; }
         }
 
+        /// <summary>
+        /// Relance le petit délai pendant lequel la fenêtre ignore la manette (voir IgnorePadAfterOpenMs).
+        /// Utile quand une fenêtre de PLAYNITE (clavier à l'écran, message) vient de se fermer : le bouton
+        /// qui l'a fermée (B, par exemple) est AUSSI transmis à notre plugin, et il ne doit pas être
+        /// compris deux fois (une fois par Playnite, une fois par notre fenêtre qui redevient active).
+        /// </summary>
+        internal void RearmGamepadDelay()
+        {
+            _readyAtUtc = DateTime.UtcNow;
+        }
+
         // Appelé par GamepadHelper (thread UI) pour la fenêtre active.
         internal void HandleGamepad(GamepadAction action)
         {

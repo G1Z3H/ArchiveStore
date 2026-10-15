@@ -88,6 +88,12 @@ namespace ArchiveStore
 
             Header.Game = gameName;
 
+            // Phrase en plus quand des dossiers « en fichiers » (sans installeur) sont proposés : ils sont COPIÉS.
+            string copyLine = extras.Installers.Any(x => x.IsCopy)
+                ? "\nLes dossiers marqués « copie » ne contiennent pas d'installeur : leur contenu est copié dans le " +
+                  "dossier du jeu, avec la même arborescence. Les fichiers du même nom sont remplacés, rien n'est supprimé."
+                : "";
+
             // Phrase en plus quand des fichiers non reconnus sont proposés.
             string manualLine = extras.Manual.Count > 0
                 ? "\nLes fichiers « non reconnus » ne sont pas cochés : s'ils le sont, ils s'ouvrent avec leur propre " +
@@ -100,13 +106,13 @@ namespace ArchiveStore
                 DescriptionText.Text =
                     "Le jeu est installé en premier, puis les DLC (d'abord) et les patchs, " +
                     "l'un après l'autre, dès que le jeu est terminé. Cochez ce que vous voulez installer ; " +
-                    "sans aucune case cochée, seul le jeu est installé." + manualLine;
+                    "sans aucune case cochée, seul le jeu est installé." + copyLine + manualLine;
             }
             else
             {
                 DescriptionText.Text =
                     "Le jeu est déjà installé. Cochez ce que vous voulez ajouter : les DLC d'abord, " +
-                    "puis les patchs, l'un après l'autre." + manualLine;
+                    "puis les patchs, l'un après l'autre." + copyLine + manualLine;
             }
 
             // Ligne « jeu » : seulement avant l'installation du jeu.
@@ -178,7 +184,9 @@ namespace ArchiveStore
             {
                 var box = new CheckBox
                 {
-                    Content = string.IsNullOrEmpty(installer.Key) ? System.IO.Path.GetFileName(installer.Path) : installer.Key,
+                    Content = installer.IsCopy
+                        ? installer.Key + "   (copie des fichiers)"
+                        : (string.IsNullOrEmpty(installer.Key) ? System.IO.Path.GetFileName(installer.Path) : installer.Key),
                     IsChecked = !manual,
                     ToolTip = installer.Path
                 };

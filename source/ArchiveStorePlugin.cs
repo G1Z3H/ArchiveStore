@@ -687,7 +687,8 @@ namespace ArchiveStore
                 var dir = ArchiveScanner.FindGameSourceDir(sourceRoots, g.GameId);
                 if (dir == null) continue; // jeu absent, ou source débranchée
 
-                var found = ArchiveScanner.FindExtraInstallers(dir, _settings.ExcludedExePatterns);
+                var found = ArchiveScanner.FindExtraInstallers(dir, _settings.ExcludedExePatterns,
+                    _settings.ExtraInstallerWords, _settings.InstallerWordsAnywhere);
                 var allKeys = found.Installers.Concat(found.Manual).Select(x => x.Key).ToList();
 
                 // Première vérification de ce jeu : on note l'existant, sans rien dire.
@@ -1082,6 +1083,15 @@ namespace ArchiveStore
         // ==================================================================
         public override IEnumerable<MainMenuItem> GetMainMenuItems(GetMainMenuItemsArgs args)
         {
+            // Réglages « manette » : une entrée directement sous « Extensions » (MenuSection "@"), en mode Bureau
+            // comme en mode Plein écran. L'écran de réglages classique (mode Bureau) reste disponible.
+            yield return new MainMenuItem
+            {
+                Description = "ArchiveStore — Réglages",
+                MenuSection = "@",
+                Action = _ => OpenConsoleSettings()
+            };
+
             const string section = "Library|ArchiveStore";
             if (_settings.Profiles != null && _settings.Profiles.Count > 1)
             {
@@ -1108,6 +1118,41 @@ namespace ArchiveStore
                         }
                     };
                 }
+            }
+        }
+
+        // ==================================================================
+        // RÉGLAGES « MANETTE » (fenêtre console) — ouverte par le menu Extensions
+        //
+        // PÉDAGOGIE : même cycle que l'écran de réglages classique (ISettings) :
+        //   BeginEdit()  → copie de sécurité des réglages ;
+        //   la fenêtre modifie les réglages EN DIRECT ;
+        //   « Enregistrer » → EndEdit() (nettoyage + écriture sur le disque) ; sinon CancelEdit() (retour en arrière).
+        // Aucune exception ne doit remonter vers Playnite : on journalise et on annule proprement.
+        // ==================================================================
+        private void OpenConsoleSettings()
+        {
+            try
+            {
+                _settings.BeginEdit();
+
+                var dialog = new ConsoleSettingsWindow(_settings, _api);
+                try { dialog.Owner = _api.Dialogs.GetCurrentAppWindow(); }
+                catch (Exception) { /* pas de fenêtre propriétaire : la fenêtre se centre sur l'écran */ }
+
+                if (dialog.ShowDialog() == true)
+                    _settings.EndEdit();
+                else
+                    _settings.CancelEdit();
+            }
+            catch (Exception ex)
+            {
+                try { _settings.CancelEdit(); } catch (Exception) { }
+                ArchiveLog.Error("Réglages manette : " + ex);
+                _api.Dialogs.ShowErrorMessage(
+                    "La fenêtre de réglages n'a pas pu s'ouvrir : " + ex.Message +
+                    "\n\nLes réglages n'ont pas été modifiés. Détails dans archivestore.log.",
+                    "ArchiveStore");
             }
         }
     }

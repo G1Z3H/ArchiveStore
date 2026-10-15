@@ -4,7 +4,7 @@
 
 ArchiveStore est une extension de bibliothèque pour Playnite. Elle transforme un simple dossier de jeux (un sous-dossier par jeu) en une vraie bibliothèque : les jeux apparaissent dans Playnite avec leur jaquette, leur taille, et les boutons natifs de Playnite, comme sur Steam ou Epic.
 
-Version actuelle : **0.0.5** (développement actif, retours bienvenus).
+Version actuelle : **0.0.6** (développement actif, retours bienvenus).
 
 ---
 
@@ -25,13 +25,13 @@ ArchiveStore automatise tout cela :
 L'idée est d'obtenir une **expérience de type console** pour une collection personnelle :
 
 - **Zéro friction** : installer un jeu doit se faire en un clic. Avec **Installation directe**, aucune fenêtre ni question quand tout est clair ; sinon, de belles fenêtres vous laissent choisir.
-- **Compatible manette et mode Plein écran** : les fenêtres de l'extension ont un style « console » et se pilotent à la manette (ou au clavier), en mode Plein écran comme en mode Bureau. Les menus, eux, sont dans le menu du jeu.
+- **Compatible manette et mode Plein écran** : les fenêtres de l'extension ont un style « console » et se pilotent à la manette (ou au clavier), en mode Plein écran comme en mode Bureau. Les menus, eux, sont dans le menu du jeu. Les **réglages** eux-mêmes ont une version « manette » (menu `Extensions`, voir plus bas).
 - **Sécurité avant tout** : l'archive source reste intacte, et toute suppression est limitée au dossier de destination.
 - **Pensé pour les collections nomades** : disque externe, Playnite portable, changement fréquent de PC.
 
 ---
 
-## Fonctionnalités actuelles (0.0.5)
+## Fonctionnalités actuelles (0.0.6)
 
 ### Bibliothèque
 - Détection automatique des jeux : **un sous-dossier d'une source = un jeu**.
@@ -80,6 +80,12 @@ L'idée est d'obtenir une **expérience de type console** pour une collection pe
 - **Clavier et souris** fonctionnent aussi : flèches, Entrée, Échap.
 - Le bouton **A** est volontairement sans effet dans la fenêtre de progression : une pression distraite ne doit rien déclencher pendant une copie.
 - En mode Bureau, la manette doit être activée dans les réglages d'entrée du mode Bureau de Playnite.
+- **Réglages en mode manette** (nouveau en 0.0.6) : menu `Extensions` > **« ArchiveStore — Réglages »**, en mode Bureau comme en mode Plein écran. Une fenêtre à deux colonnes, entièrement pilotable à la manette (ou au clavier), reprend les réglages de l'extension en **neuf catégories** : Profils, Comportement, Notifications, Toasts, DLC et patchs, Installeurs non reconnus, Installation silencieuse, Exclusions et sauvegardes, Journal.
+  - Les modifications sont faites **en direct** : **Y** enregistre, **B** annule (avec une confirmation si vous avez changé quelque chose). Les mêmes vérifications que dans les réglages classiques s'appliquent à l'enregistrement.
+  - **Éditeur de profil** : nom, sources, destinations, profil actif, suppression.
+  - **Navigateur de dossiers** pour choisir une source ou une destination : **gauche** remonte au dossier parent, **droite** entre dans le sous-dossier, **A** choisit, **Y** ouvre la boîte de dossier de Windows (pratique pour un chemin réseau), **B** annule.
+  - Il n'y a **pas de saisie d'un chemin au clavier** : le clavier à l'écran de Playnite en mode Plein écran n'a pas la touche « \ ». Pour un chemin réseau, passez par la boîte de Windows (Y) ou par les réglages classiques.
+  - Les réglages classiques (`Paramètres > Extensions > ArchiveStore`) restent disponibles en mode Bureau et contiennent les mêmes options.
 - Une fenêtre ne réagit à la manette que lorsqu'elle est la fenêtre active : un appui sur B dans Playnite n'annule jamais une copie en arrière-plan.
 
 ### DLC et patchs
@@ -97,14 +103,35 @@ E:\Archives
         └── patch_02_cyberpunk_2077_2.1.exe
 ```
 
+Un DLC ou un patch peut aussi être un simple **dossier de fichiers**, sans installeur (voir « DLC et patchs en fichiers simples » plus bas) :
+
+```
+E:\Archives
+└── Mon Jeu
+    ├── Mon Jeu.exe
+    ├── data\...
+    └── DLC
+        └── Pack Texture HD               ← dossier de fichiers, sans installeur
+            ├── data
+            │   └── textures.pak          ← remplace data\textures.pak dans le jeu
+            └── bonus.dll                 ← ajouté à la racine du jeu
+```
+
 - Un sous-dossier dont le nom contient **« DLC »** est un dossier de DLC ; un sous-dossier dont le nom contient **« patch »** ou **« update »** est un dossier de patchs. Ces dossiers ne sont jamais pris pour un jeu ni pour l'installeur du jeu de base.
-- Après le jeu, les installeurs **reconnus** (Inno Setup, NSIS, MSI) sont lancés en silencieux, l'un après l'autre : **DLC d'abord, puis patchs**, chacun par ordre alphabétique. **Dès qu'un échec survient, tout s'arrête** et le plugin dit lequel a échoué et lesquels n'ont pas été lancés.
+- Après le jeu, les installeurs **reconnus** (Inno Setup, NSIS, MSI) sont lancés en silencieux, l'un après l'autre : **DLC d'abord, puis patchs**, chacun par ordre alphabétique. Les DLC et patchs **en fichiers simples** (sans installeur) sont **copiés** dans le dossier du jeu, dans le même ordre. **Dès qu'un échec survient, tout s'arrête** et le plugin dit lequel a échoué et lesquels n'ont pas été lancés.
 - **Nommez vos patchs pour qu'ils se classent dans l'ordre alphabétique des versions** : numéro en tête avec deux chiffres (`patch_01…`, `patch_02…`, `patch_10…`) ou version complète et régulière. Sinon `1.10` passerait avant `1.9`.
 - **Fichiers GOG** : gardez le `.exe` et ses fichiers `.bin` ensemble, dans le même dossier, avec leurs noms d'origine (ou renommez-les ensemble, en conservant le même début de nom). Les `.bin` ne sont pas lancés par le plugin : c'est l'installeur GOG qui les lit.
-- Un fichier `.exe` dont le type n'est pas reconnu n'est **jamais lancé tout seul**. Il est proposé dans la fenêtre de choix (décoché, avec un avertissement) et s'ouvre avec sa propre fenêtre ; ensuite le plugin vous demande si l'installation s'est bien passée.
+- **DLC et patchs en fichiers simples (nouveau en 0.0.6)** : un sous-dossier de DLC ou de patchs qui **ne contient aucun installeur** est une **copie de fichiers**. Son contenu est copié dans le dossier du jeu, **avec la même arborescence** : le dossier doit donc refléter celle du jeu (comme dans l'exemple plus haut).
+  - Les fichiers du **même nom sont remplacés** (même s'ils sont en lecture seule, comme pour un patch qui remplace `jeu.exe`), les nouveaux fichiers sont **ajoutés**, **rien n'est supprimé**, et **la source n'est jamais modifiée**.
+  - **Un dossier de premier niveau = un extra** : une case dans la fenêtre des DLC et patchs, libellée « (copie des fichiers) », avec la même mémoire « déjà installé » que les autres extras.
+  - Un dossier est considéré comme **contenant un installeur** s'il a un installeur reconnu (Inno Setup, NSIS, MSI), ou un `.exe` dont le nom commence par `setup` ou `install` (ou l'un des mots que vous avez ajoutés dans « Installeurs non reconnus »). Il fonctionne alors comme avant. Dans un dossier à copier, les `.exe` font partie de la copie.
+  - **Dossiers mixtes** : DLC avec installeur et DLC en fichiers peuvent cohabiter dans le même jeu ; chacun est traité selon son contenu.
+  - En **Installation directe**, la copie se fait **sans confirmation**, en remplaçant les fichiers du même nom, comme pour les installeurs. Avec fenêtres, vous choisissez les extras à appliquer.
+  - La progression d'une copie d'extra est approximative. Les `.bin` GOG ne sont jamais touchés.
+- Un fichier `.exe` dont le type n'est pas reconnu n'est **jamais lancé tout seul**. Il est proposé dans la fenêtre de choix (décoché, avec un avertissement) et s'ouvre avec sa propre fenêtre ; ensuite le plugin vous demande si l'installation s'est bien passée. Attention : cela ne vaut que pour un dossier qui contient un installeur (reconnu, ou nommé `setup`/`install`…). Un installeur personnalisé au nom différent, rangé seul dans un dossier de DLC ou de patchs, serait **copié** comme un fichier ordinaire : ajoutez son mot dans « Installeurs non reconnus » pour qu'il soit traité comme un installeur.
 - **Fenêtre de choix** (« Installation directe » décochée et « Demander confirmation avant d'installer les DLC et patchs » cochée, en mode Bureau comme en mode Plein écran) : une case par fichier pour choisir ce qui s'installe, et un bouton **« Déjà installés »** pour noter des extras installés avant cette version, sans rien réinstaller. Sans fenêtre (installation directe), tout s'installe automatiquement après le jeu.
-- **Après coup** : clic droit sur un jeu installé (en mode Plein écran : menu du jeu, `Extensions`), puis `Installer les DLC et patchs (ArchiveStore)` (un jeu à la fois). Seuls les extras pas encore installés sont proposés.
-- **Nouveaux DLC et patchs détectés** : à chaque mise à jour de la bibliothèque, l'extension regarde, en arrière-plan, le dossier source de chaque jeu installé. S'il y a des DLC ou patchs qu'elle n'avait jamais vus, **une notification par jeu** l'indique (« 2 nouveaux DLC et 1 nouveau patch pour 'Mon jeu' »). Un **clic** ouvre la fenêtre des DLC et patchs de ce jeu, même avec « Installation directe » : rien ne s'installe sur un simple clic. Chaque fichier n'est signalé **qu'une seule fois**, même si vous ne l'installez pas. La première vérification d'un jeu ne signale rien : elle note seulement ce qui existe déjà. Seuls les jeux installés par un installeur reconnu, dont l'extension connaît les extras, sont surveillés. Désactivable dans les réglages.
+- **Après coup** : clic droit sur un jeu installé (en mode Plein écran : menu du jeu, `Extensions`), puis `Installer les DLC et patchs (ArchiveStore)` (un jeu à la fois). Seuls les extras pas encore installés sont proposés. S'il n'y a rien à installer (aucun DLC ou patch trouvé, ou tout est déjà installé), un message l'indique, et un toast aussi (catégorie « Confirmations de menu »).
+- **Nouveaux DLC et patchs détectés** : à chaque mise à jour de la bibliothèque, l'extension regarde, en arrière-plan, le dossier source de chaque jeu installé. S'il y a des DLC ou patchs qu'elle n'avait jamais vus, **une notification par jeu** l'indique (« 2 nouveaux DLC et 1 nouveau patch pour 'Mon jeu' »). Un **clic** ouvre la fenêtre des DLC et patchs de ce jeu, même avec « Installation directe » : rien ne s'installe sur un simple clic. Chaque fichier n'est signalé **qu'une seule fois**, même si vous ne l'installez pas. La première vérification d'un jeu ne signale rien : elle note seulement ce qui existe déjà. Seuls les jeux installés par un installeur reconnu, dont l'extension connaît les extras, sont surveillés. Les DLC et patchs en fichiers simples comptent aussi : après la mise à jour vers la 0.0.6, **une notification de nouveaux DLC et patchs peut donc apparaître une fois** pour des dossiers de fichiers qui existaient déjà. Désactivable dans les réglages.
 - Un **jeu portable** est copié en entier, DLC et patchs compris, sans aucune détection.
 - Si l'espace manque pour le jeu et ses extras mais suffit pour le jeu seul, le jeu est installé et les extras sont ignorés (avec une notification).
 
@@ -123,7 +150,7 @@ Les notifications sont regroupées en six catégories, **toutes activées par d�
 3. **Doublons entre sources** : le même dossier de jeu existe dans plusieurs sources (la première est utilisée).
 4. **Résumés de fin** : jeu installé, désinstallé, installation annulée, DLC et patchs terminés.
 5. **Infos pendant l'installation** : exécutable choisi ou mémorisé, destination de secours, avancement d'une installation directe. L'avancement d'une **copie** reste toujours affiché, car un clic dessus est le seul moyen de l'annuler sans fenêtre.
-6. **Confirmations de menu** : profil activé, destination mémorisée, exécutable réassocié.
+6. **Confirmations de menu** : profil activé, destination mémorisée, exécutable réassocié, et les messages « rien à installer » du menu `Installer les DLC et patchs`.
 
 **Les erreurs et les blocages s'affichent toujours** (échec d'une installation, espace insuffisant, destination absente ou déjà remplie au moment d'installer, exécutable introuvable…) : ils ne se désactivent pas.
 
@@ -150,6 +177,7 @@ Un **toast** est une petite carte qui s'affiche en bas à droite de l'écran, au
 - Groupe **Toasts** : sept cases, « Y compris pendant une partie », la disposition (l'un après l'autre ou superposés) et un bouton de test (voir plus haut).
 - Rythme de mise à jour de la progression (2 à 10 secondes).
 - Bouton **Ouvrir le journal**.
+- Tous ces réglages sont aussi accessibles à la manette par le menu `Extensions` > « ArchiveStore — Réglages » (voir « Interface console et manette »).
 
 ---
 
@@ -191,7 +219,7 @@ C:\Jeux anciens             ← 2e destination (facultatif), pour un vieux jeu q
 4. Ouvrez `Paramètres > Extensions > ArchiveStore`, créez un profil, ajoutez-y au moins une source et une destination, et choisissez-le comme profil actif.
 5. Lancez `Bibliothèque > Mettre à jour les bibliothèques`.
 
-Mise à jour depuis une version précédente : remplacez les fichiers de l'extension et redémarrez Playnite. Vos réglages sont conservés. Les nouvelles cases (toasts) sont **cochées par défaut** : après la mise à jour, des toasts apparaissent en plus des notifications ; décochez-les dans le groupe « Toasts » si vous n'en voulez pas.
+Mise à jour depuis une version précédente : remplacez les fichiers de l'extension et redémarrez Playnite. Vos réglages sont conservés. Les nouvelles cases (toasts) sont **cochées par défaut** : après la mise à jour, des toasts apparaissent en plus des notifications ; décochez-les dans le groupe « Toasts » si vous n'en voulez pas. Depuis la 0.0.6, les dossiers de DLC et de patchs **sans installeur** sont copiés dans le jeu (voir « DLC et patchs ») : vérifiez que les vôtres reflètent bien l'arborescence du jeu.
 
 ### Prérequis
 - Playnite 10+ (SDK 6.17)
@@ -204,7 +232,7 @@ Mise à jour depuis une version précédente : remplacez les fichiers de l'exten
 Ce qui suit est une liste d'**intentions**, sans engagement de date ni d'ordre.
 
 ### Prochaines étapes
-- **Version anglaise** de l'extension (fenêtres, réglages, messages et documentation).
+- **Version anglaise** de l'extension (fenêtres, réglages, messages et documentation), prévue pour la **0.0.7**.
 - **Préparation de la publication** : notes de version et README en anglais, captures d'écran, test sur un autre PC « propre », choix de l'icône.
 
 ### Idées pour la suite
@@ -220,6 +248,7 @@ Ce qui suit est une liste d'**intentions**, sans engagement de date ni d'ordre.
 - **Sauvegardes de jeux par jonction** (fonction facultative, désactivée par défaut), pour que les sauvegardes d'un jeu suivent l'utilisateur d'un PC à l'autre. À décider selon les retours des utilisateurs.
 - **Rapport de santé** de la bibliothèque et bouton de diagnostic.
 - **Respect du thème** de Playnite dans les paramètres.
+- **Clavier à l'écran adapté** à la manette (avec la touche « \ »), pour pouvoir saisir un chemin réseau en mode Plein écran. Idée gardée de côté, pour une version ultérieure.
 
 ---
 
@@ -237,6 +266,8 @@ Ce qui suit est une liste d'**intentions**, sans engagement de date ni d'ordre.
 - La **veille bloquée** pendant une installation n'empêche que la veille automatique par inactivité : fermer le capot ou appuyer sur le bouton d'alimentation met toujours le PC en veille, et l'écran peut s'éteindre.
 - **« Écraser »** sur un dossier existant ne supprime rien, mais un installeur reste libre de remplacer des fichiers du dossier selon ses propres règles (pour Inno Setup, la documentation dit qu'il ne remplace que ses propres fichiers, sans rien préciser des autres). Faites une sauvegarde de ce qui compte pour vous. Avec un installeur non reconnu, la vérification finale se contente de chercher un exécutable de jeu dans le dossier : elle réussit donc même si l'installeur a installé le jeu ailleurs.
 - Après « **Utiliser ce dossier tel quel** » ou « Écraser », le plugin ne sait pas quels DLC et patchs se trouvent déjà dans le dossier ; ceux de l'archive pourront être reproposés. Et **désinstaller** ensuite supprime tout le dossier, y compris ce qui ne vient pas de l'archive : la confirmation affiche le chemin exact.
+- **Réglages manette** : pas de saisie d'un chemin au clavier (le clavier à l'écran de Playnite n'a pas la touche « \ »). La boîte de dossier de Windows (Y) ou les réglages classiques permettent de saisir un chemin réseau.
+- **DLC et patchs en fichiers simples** : le plugin ne vérifie pas que le dossier reflète l'arborescence du jeu, il copie ce qu'il trouve. Un fichier du même nom est toujours remplacé, sans sauvegarde de l'ancien ; la désinstallation du jeu supprime tout le dossier d'installation, extras copiés compris. La progression d'une copie d'extra est approximative.
 - Les sauvegardes de jeux ne sont pas gérées par l'extension.
 
 ---
@@ -251,4 +282,4 @@ GizeH
 
 ## Licence
 
-Licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
+MIT. Voir le fichier [LICENSE](LICENSE).

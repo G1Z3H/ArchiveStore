@@ -1,0 +1,57 @@
+<local:ConsoleWindow x:Class="ArchiveStore.ProfileEditorDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ArchiveStore"
+        Title="ArchiveStore — Profil"
+        Width="1048">
+
+    <local:ConsoleWindow.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ConsoleStyle.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </local:ConsoleWindow.Resources>
+
+    <!--
+        Édition d'UN profil : son nom, ses sources (dossiers d'archives), ses destinations (dossiers
+        d'installation). Les modifications s'appliquent tout de suite aux réglages en cours d'édition ;
+        elles ne sont écrites sur le disque que par « Enregistrer » dans la fenêtre des réglages.
+    -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="40,32,40,6">
+            <local:ConsoleHeader Section="Profil"/>
+            <TextBlock x:Name="TitleText" Style="{StaticResource TitleStyle}" TextTrimming="CharacterEllipsis" Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <ScrollViewer x:Name="Scroll"
+                      Grid.Row="1"
+                      Focusable="False"
+                      VerticalScrollBarVisibility="Hidden"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel x:Name="Host" Margin="40,0,40,24"/>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Style="{StaticResource FooterStyle}">
+            <DockPanel LastChildFill="True">
+                <Button x:Name="BtnDone"
+                        DockPanel.Dock="Right"
+                        Content="Terminé"
+                        Style="{StaticResource PrimaryButton}"
+                        MinWidth="160"
+                        Click="BtnDone_Click"/>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <local:PadHint Pad="D" Label="Naviguer"/>
+                    <local:PadHint Pad="A" Label="Choisir"/>
+                    <local:PadHint Pad="B" Label="Terminé"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</local:ConsoleWindow>

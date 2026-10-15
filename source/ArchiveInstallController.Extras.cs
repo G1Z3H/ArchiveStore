@@ -273,7 +273,8 @@ namespace ArchiveStore
             bytes = 0;
             try
             {
-                var extras = ArchiveScanner.FindExtraInstallers(sourceGameDir, _settings.ExcludedExePatterns);
+                var extras = ArchiveScanner.FindExtraInstallers(sourceGameDir, _settings.ExcludedExePatterns,
+                    _settings.ExtraInstallerWords, _settings.InstallerWordsAnywhere);
 
                 var folders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var x in extras.Installers.Concat(extras.Manual))
@@ -394,12 +395,16 @@ namespace ArchiveStore
                     {
                         ShowProgress($"Installation de '{Game.Name}' : {_stepLabel} ({fileName})…", null);
                     }
-                    ArchiveLog.Info($"Extra {i + 1}/{list.Count} ({label}) : lancement de '{extra.Path}' (type {extra.Type}).");
+                    ArchiveLog.Info(extra.IsCopy
+                        ? $"Extra {i + 1}/{list.Count} ({label}, copie de fichiers) : copie du dossier '{extra.Path}' dans '{destDir}'."
+                        : $"Extra {i + 1}/{list.Count} ({label}) : lancement de '{extra.Path}' (type {extra.Type}).");
 
                     string error;
-                    bool launched = extra.IsManual
-                        ? RunManualExtra(extra, interactive, out error)
-                        : RunExtraInstaller(extra, destDir, out error);
+                    bool launched = extra.IsCopy
+                        ? RunCopyExtra(extra, destDir, out error)
+                        : extra.IsManual
+                            ? RunManualExtra(extra, interactive, out error)
+                            : RunExtraInstaller(extra, destDir, out error);
                     if (!launched)
                     {
                         var notRun = list.Skip(i + 1).Select(x => Path.GetFileName(x.Path)).ToList();
@@ -419,7 +424,9 @@ namespace ArchiveStore
                         return $" Extras interrompus : échec de '{fileName}'.";
                     }
 
-                    ArchiveLog.Info($"Extra {i + 1}/{list.Count} '{fileName}' : installé.");
+                    ArchiveLog.Info(extra.IsCopy
+                        ? $"Extra {i + 1}/{list.Count} '{fileName}' : copié."
+                        : $"Extra {i + 1}/{list.Count} '{fileName}' : installé.");
 
                     // Mémorisé tout de suite : si un extra suivant échoue, celui-ci reste noté « installé ».
                     RememberInstalledExtra(extra);
@@ -594,6 +601,48 @@ namespace ArchiveStore
             ArchiveLog.Info($"Lancement manuel de '{fileName}' : réponse de l'utilisateur = {(ok ? "installé" : "non installé")}.");
             if (!ok) error = "l'utilisateur indique que l'installation n'a pas abouti";
             return ok;
+        }
+
+        // « EXTRA EN FICHIERS » : copie le contenu d'un dossier de DLC ou de patchs (sans installeur) dans le
+        // dossier du jeu, avec la même arborescence.
+        //   • les fichiers du même nom sont REMPLACÉS, les autres sont ajoutés ;
+        //   • RIEN n'est supprimé (ni dans le jeu, ni ailleurs) ;
+        //   • la SOURCE n'est jamais modifiée (lecture seule) ;
+        //   • les jonctions ne sont pas suivies (voir ArchiveScanner.CopyDirectory).
+        // Garde-fou : on refuse si la source et la destination s'imbriquent (PathsOverlap), pour ne jamais copier
+        // une archive sur elle-même. Retourne vrai si tout est copié ; sinon faux, avec une explication dans
+        // « error ». Ne lève pas d'exception.
+        private bool RunCopyExtra(ExtraInstaller extra, string destDir, out string error)
+        {
+            error = null;
+            try
+            {
+                if (string.IsNullOrEmpty(extra.Path) || !Directory.Exists(extra.Path))
+                {
+                    error = "dossier source introuvable";
+                    return false;
+                }
+                if (string.IsNullOrEmpty(destDir) || !Directory.Exists(destDir))
+                {
+                    error = "dossier d'installation du jeu introuvable";
+                    return false;
+                }
+                if (ArchiveScanner.PathsOverlap(extra.Path, destDir))
+                {
+                    error = "la source et le dossier du jeu s'imbriquent : copie refusée par sécurité";
+                    return false;
+                }
+
+                var chrono = System.Diagnostics.Stopwatch.StartNew();
+                ArchiveScanner.CopyDirectory(extra.Path, destDir, null, CancellationToken.None);
+                ArchiveLog.Info($"Copie de '{extra.FolderName}' terminée (durée {DescribeDuration(chrono.Elapsed)}).");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return false;
+            }
         }
 
         // Lance UN installeur d'extra en silencieux et attend sa fin.
@@ -859,7 +908,7 @@ namespace ArchiveStore
                 if (!IsRecognizedInstaller(scan.DetectedType) && scan.DetectedType != InstallerType.Unknown)
                 {
                     ArchiveLog.Info($"Menu DLC et patchs de '{Game.Name}' : jeu portable (type détecté {scan.DetectedType}), rien à installer.");
-                    Notify("ArchiveStore_ExtrasMenu",
+                    Notify("ArchiveStore_ExtrasMenuNone",
                         $"ArchiveStore : '{Game.Name}' a été copié tel quel (jeu portable) : ses DLC et patchs, " +
                         "s'il y en a, sont déjà inclus dans la copie.",
                         NotificationType.Info);
@@ -880,8 +929,8 @@ namespace ArchiveStore
 
                 if (found.Installers.Count == 0 && found.Manual.Count == 0)
                 {
-                    ArchiveLog.Info($"Menu DLC et patchs de '{Game.Name}' : aucun dossier de DLC ou de patchs avec un installeur.");
-                    Notify("ArchiveStore_ExtrasMenu",
+                    ArchiveLog.Info($"Menu DLC et patchs de '{Game.Name}' : aucun dossier de DLC ou de patchs (ni installeur, ni fichiers à copier).");
+                    Notify("ArchiveStore_ExtrasMenuNone",
                         $"ArchiveStore : aucun dossier de DLC ou de patchs trouvé pour '{Game.Name}'.",
                         NotificationType.Info);
                     return;
@@ -893,7 +942,7 @@ namespace ArchiveStore
                 if (found.Installers.Count == 0 && !windowPossible)
                 {
                     ArchiveLog.Info($"Menu DLC et patchs de '{Game.Name}' : seulement des fichiers non reconnus, et pas de fenêtre de choix.");
-                    Notify("ArchiveStore_ExtrasMenu",
+                    Notify("ArchiveStore_ExtrasMenuNone",
                         $"ArchiveStore : dossier de DLC ou de patchs trouvé pour '{Game.Name}', mais {DescribeNotRecognized(found.NotRecognized)} : " +
                         "type d'installeur non reconnu. Ils ne se lancent qu'à la main, depuis la fenêtre de choix " +
                         "(« Installation directe » décochée et confirmation activée).",
@@ -911,7 +960,7 @@ namespace ArchiveStore
                 if (pending.Count == 0 && pendingManual.Count == 0)
                 {
                     ArchiveLog.Info($"Menu DLC et patchs de '{Game.Name}' : les {found.Installers.Count + found.Manual.Count} extra(s) trouvé(s) sont déjà installés.");
-                    Notify("ArchiveStore_ExtrasMenu",
+                    Notify("ArchiveStore_ExtrasMenuNone",
                         $"ArchiveStore : tous les DLC et patchs trouvés pour '{Game.Name}' sont déjà installés.",
                         NotificationType.Info);
                     return;

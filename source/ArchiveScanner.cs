@@ -130,6 +130,13 @@ namespace ArchiveStore
         public bool IsManual { get; set; }
 
         /// <summary>
+        /// Vrai = « extra en fichiers » : un sous-dossier de DLC ou de patchs SANS installeur. Path est alors le
+        /// DOSSIER lui-même (dans l'archive source : lecture seule). Il est copié dans le dossier du jeu avec la même
+        /// arborescence : les fichiers du même nom sont remplacés, les autres ajoutés, rien n'est supprimé.
+        /// </summary>
+        public bool IsCopy { get; set; }
+
+        /// <summary>
         /// Identifiant stable de cet installeur : son chemin RELATIF dans le dossier du jeu
         /// (ex. « DLC\setup_dlc1.exe »). C'est ce qu'on mémorise pour savoir qu'il est déjà installé.
         /// </summary>
@@ -589,7 +596,9 @@ namespace ArchiveStore
         /// </summary>
         public static ExtraScanResult FindExtraInstallers(
             string gameFolder,
-            List<string> excludedPatterns)
+            List<string> excludedPatterns,
+            List<string> extraInstallerWords = null,
+            bool installerWordsAnywhere = false)
         {
             var result = new ExtraScanResult();
             if (string.IsNullOrEmpty(gameFolder)) return result;
@@ -609,8 +618,19 @@ namespace ArchiveStore
 
                 bool isDlc = kind == ExtraFolderKind.Dlc;
 
+                // Ce sous-dossier a-t-il (au moins) un fichier ? Contient-il un installeur reconnu, ou un .exe qui
+                // ressemble à un installeur (« setup »… : mêmes mots que le cas ambigu) ?
+                bool hasAnyFile = false;
+                bool hasRecognized = false;
+                bool hasSetupLookingExe = false;
+                var folderFound = new List<ExtraInstaller>();
+                var folderManual = new List<ExtraInstaller>();
+                var folderNotRecognized = new List<string>();
+
                 foreach (var file in EnumerateFilesSafe(sub))
                 {
+                    hasAnyFile = true;
+
                     var ext = Path.GetExtension(file);
                     bool isMsi = ext.Equals(".msi", StringComparison.OrdinalIgnoreCase);
                     bool isExe = ext.Equals(".exe", StringComparison.OrdinalIgnoreCase);
@@ -636,14 +656,45 @@ namespace ArchiveStore
 
                     if (recognized)
                     {
-                        found.Add(item);
+                        hasRecognized = true;
+                        folderFound.Add(item);
                     }
                     else
                     {
-                        result.NotRecognized.Add(file);
-                        manual.Add(item);
+                        if (LooksLikeSetupName(file, extraInstallerWords, installerWordsAnywhere))
+                            hasSetupLookingExe = true;
+                        folderNotRecognized.Add(file);
+                        folderManual.Add(item);
                     }
                 }
+
+                // RÈGLE : un dossier d'extras qui contient un installeur (reconnu, ou dont le nom ressemble à
+                // « setup »…) fonctionne comme avant (lancement silencieux, ou lancement à la main). Un dossier SANS
+                // aucun installeur est un « extra en fichiers » : son contenu est copié dans le dossier du jeu avec la
+                // même arborescence. Ses éventuels .exe (ex. un jeu mis à jour) font alors partie de la copie.
+                if (!hasRecognized && !hasSetupLookingExe)
+                {
+                    if (hasAnyFile)
+                    {
+                        string folderKey;
+                        if (!TryGetRelativePath(gameFolder, sub, out folderKey)) folderKey = folderName;
+                        found.Add(new ExtraInstaller
+                        {
+                            Path = sub,
+                            Type = InstallerType.None,
+                            FolderName = folderName,
+                            IsDlc = isDlc,
+                            Key = folderKey,
+                            IsManual = false,
+                            IsCopy = true
+                        });
+                    }
+                    continue;
+                }
+
+                found.AddRange(folderFound);
+                manual.AddRange(folderManual);
+                result.NotRecognized.AddRange(folderNotRecognized);
             }
 
             result.Installers = found
@@ -932,6 +983,16 @@ namespace ArchiveStore
             string sourceFile, string destFile,
             IProgress<CopyProgress> progress, CancellationToken token, CopyState state)
         {
+            // Un fichier de même nom déjà présent dans la destination (cas d'un DLC ou d'un patch copié PAR-DESSUS
+            // le jeu) sera remplacé : s'il est en « lecture seule », Windows refuserait. On lève cet attribut seulement
+            // sur ce fichier de la DESTINATION ; la source n'est jamais touchée.
+            try
+            {
+                if (File.Exists(destFile) && (File.GetAttributes(destFile) & FileAttributes.ReadOnly) != 0)
+                    File.SetAttributes(destFile, FileAttributes.Normal);
+            }
+            catch { /* si on n'y arrive pas, l'écriture échouera et l'erreur sera signalée */ }
+
             var buffer = new byte[CopyBufferSize];
             using (var input = new FileStream(sourceFile, FileMode.Open, FileAccess.Read, FileShare.Read))
             using (var output = new FileStream(destFile, FileMode.Create, FileAccess.Write, FileShare.None))

@@ -1191,7 +1191,7 @@ namespace ArchiveStore
         // Catégorie de chaque notification émise par Notify() (identifiant SANS le suffixe du jeu).
         // Une notification qui n'est pas dans cette table s'affiche TOUJOURS (blocages, avertissements importants :
         // espace insuffisant pour les extras, types d'installeur non reconnus, plantage d'un installeur,
-        // réponses aux actions de menu « rien à installer »…).
+        // erreurs du menu « DLC et patchs »…).
         // PÉDAGOGIE — static readonly : une seule table pour toute l'application, jamais modifiée après sa création.
         private static readonly Dictionary<string, NotifyCategory> NotificationCategories =
             new Dictionary<string, NotifyCategory>(StringComparer.Ordinal)
@@ -1207,7 +1207,11 @@ namespace ArchiveStore
                 { "ArchiveStore_ExeAuto", NotifyCategory.InstallInfo },
                 { "ArchiveStore_DestFallback", NotifyCategory.InstallInfo },
                 { "ArchiveStore_InstallInfo", NotifyCategory.InstallInfo },
-                { "ArchiveStore_ExtrasFound", NotifyCategory.InstallInfo }
+                { "ArchiveStore_ExtrasFound", NotifyCategory.InstallInfo },
+                // Réponses « rien à installer » du menu clic droit « Installer les DLC et patchs » : ce sont des
+                // confirmations d'une action de menu (case « Confirmations de menu », et son toast). Les ERREURS du
+                // même menu gardent l'identifiant « ArchiveStore_ExtrasMenu » : sans catégorie, elles s'affichent toujours.
+                { "ArchiveStore_ExtrasMenuNone", NotifyCategory.MenuConfirmations }
             };
 
         /// <summary>
