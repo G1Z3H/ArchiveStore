@@ -1,17 +1,18 @@
-<local:ConsoleWindow x:Class="ArchiveStore.ConsoleConfirmDialog"
+<tk:ConsoleWindow x:Class="ArchiveStore.ConsoleConfirmDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:ArchiveStore"
+        xmlns:tk="clr-namespace:ArgentToolkit"
         Title="ArchiveStore"
         Width="760">
 
-    <local:ConsoleWindow.Resources>
+    <tk:ConsoleWindow.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="ConsoleStyle.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
-    </local:ConsoleWindow.Resources>
+    </tk:ConsoleWindow.Resources>
 
     <!--
         Remplace les MessageBox Windows (barre blanche, boutons non manette) pour les questions
@@ -25,7 +26,7 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="40,32,40,26">
-            <local:ConsoleHeader Section="Confirmation"/>
+            <tk:ConsoleHeader Section="Confirmation"/>
             <TextBlock x:Name="TitleText" Style="{StaticResource TitleStyle}"/>
             <TextBlock x:Name="MessageText" Style="{StaticResource DescStyle}" Margin="0,14,0,0"/>
         </StackPanel>
@@ -37,11 +38,11 @@
                     <Button x:Name="BtnYes" Content="Oui" MinWidth="160" Click="BtnYes_Click"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <local:PadHint Pad="H" Label="Choisir"/>
-                    <local:PadHint Pad="A" Label="Valider"/>
-                    <local:PadHint x:Name="HintB" Pad="B" Label="Non"/>
+                    <tk:PadHint Pad="H" Label="Choisir"/>
+                    <tk:PadHint Pad="A" Label="Valider"/>
+                    <tk:PadHint x:Name="HintB" Pad="B" Label="Non"/>
                 </StackPanel>
             </DockPanel>
         </Border>
     </Grid>
-</local:ConsoleWindow>
+</tk:ConsoleWindow>

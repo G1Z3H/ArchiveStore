@@ -1,0 +1,56 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!--
+        PluginBrand.xaml — l'identité de ArchiveStore dans les fenêtres « console » d'ArgentToolkit.
+        Chargé automatiquement par ConsoleStyle.xaml (qui doit se trouver dans le MÊME dossier).
+          • PluginBrandName : le nom affiché en capitales dans l'en-tête des fenêtres ;
+          • LogoImage       : le logo de l'en-tête et des toasts.
+    -->
+
+    <sys:String x:Key="PluginBrandName">ARCHIVESTORE</sys:String>
+
+    <!-- ============================ LOGO ============================ -->
+    <!-- Dessiné en vectoriel (aucune image à copier) : une boîte d'archives avec un triangle « jouer ». -->
+    <DrawingImage x:Key="LogoImage">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <GeometryDrawing Brush="#232c47">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry Rect="8,8,240,240" RadiusX="52" RadiusY="52"/>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing Brush="#8fa0ff">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry Rect="52,60,152,40" RadiusX="10" RadiusY="10"/>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing Brush="#2f3a5c">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry Rect="64,100,128,100" RadiusX="12" RadiusY="12"/>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing Brush="#111624">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry Rect="102,113,52,11" RadiusX="5.5" RadiusY="5.5"/>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing>
+                    <GeometryDrawing.Brush>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#4af0d0" Offset="0"/>
+                            <GradientStop Color="#4aa8ff" Offset="1"/>
+                        </LinearGradientBrush>
+                    </GeometryDrawing.Brush>
+                    <GeometryDrawing.Pen>
+                        <Pen Thickness="6" LineJoin="Round" Brush="#4ac8ea"/>
+                    </GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <PathGeometry Figures="M112,140 L112,184 L152,162 Z"/>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+</ResourceDictionary>

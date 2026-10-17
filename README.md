@@ -4,7 +4,9 @@
 
 ArchiveStore est une extension de bibliothèque pour Playnite. Elle transforme un simple dossier de jeux (un sous-dossier par jeu) en une vraie bibliothèque : les jeux apparaissent dans Playnite avec leur jaquette, leur taille, et les boutons natifs de Playnite, comme sur Steam ou Epic.
 
-Version actuelle : **0.0.6** (développement actif, retours bienvenus).
+Version actuelle : **0.0.7** (développement actif, retours bienvenus).
+
+> **Nouveau en 0.0.7 :** les fenêtres « console » viennent de la boîte à outils partagée **ArgentToolkit** (dossier voisin `..\ArgentToolkit`, nécessaire à la compilation). Avec le thème Argent, un gros thème en préparationq qui arrive prochainement, elles prennent ses couleurs ; avec les autres thèmes, rien ne change. Sinon pas de changement sur les fonctinnalités par rapport à 0.0.6.
 
 ---
 

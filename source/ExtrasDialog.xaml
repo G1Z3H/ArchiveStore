@@ -1,17 +1,18 @@
-<local:ConsoleWindow x:Class="ArchiveStore.ExtrasDialog"
+<tk:ConsoleWindow x:Class="ArchiveStore.ExtrasDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:ArchiveStore"
+        xmlns:tk="clr-namespace:ArgentToolkit"
         Title="ArchiveStore — DLC et patchs"
         Width="960">
 
-    <local:ConsoleWindow.Resources>
+    <tk:ConsoleWindow.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="ConsoleStyle.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
-    </local:ConsoleWindow.Resources>
+    </tk:ConsoleWindow.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -20,7 +21,7 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="40,32,40,24">
-            <local:ConsoleHeader x:Name="Header" Section="DLC et patchs"/>
+            <tk:ConsoleHeader x:Name="Header" Section="DLC et patchs"/>
 
             <TextBlock x:Name="TitleText" Style="{StaticResource TitleStyle}"/>
             <TextBlock x:Name="DescriptionText" Style="{StaticResource DescStyle}" Margin="0,12,0,16"/>
@@ -64,12 +65,12 @@
         <Border Grid.Row="1" Style="{StaticResource FooterStyle}">
             <StackPanel>
                 <StackPanel Orientation="Horizontal">
-                    <local:PadHint Pad="D" Label="Naviguer"/>
-                    <local:PadHint x:Name="HintA" Pad="A" Label="Cocher"/>
+                    <tk:PadHint Pad="D" Label="Naviguer"/>
+                    <tk:PadHint x:Name="HintA" Pad="A" Label="Cocher"/>
                     <!-- X et Y servent aussi de boutons à la souris -->
-                    <local:PadHint Pad="X" Label="Tout cocher" Cursor="Hand" MouseLeftButtonUp="HintX_Click"/>
-                    <local:PadHint Pad="Y" Label="Tout décocher" Cursor="Hand" MouseLeftButtonUp="HintY_Click"/>
-                    <local:PadHint Pad="B" Label="Annuler"/>
+                    <tk:PadHint Pad="X" Label="Tout cocher" Cursor="Hand" MouseLeftButtonUp="HintX_Click"/>
+                    <tk:PadHint Pad="Y" Label="Tout décocher" Cursor="Hand" MouseLeftButtonUp="HintY_Click"/>
+                    <tk:PadHint Pad="B" Label="Annuler"/>
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
@@ -95,4 +96,4 @@
             </StackPanel>
         </Border>
     </Grid>
-</local:ConsoleWindow>
+</tk:ConsoleWindow>

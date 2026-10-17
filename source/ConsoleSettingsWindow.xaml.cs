@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using Playnite.SDK;
+using ArgentToolkit;
 
 namespace ArchiveStore
 {

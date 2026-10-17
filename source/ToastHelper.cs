@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using Playnite.SDK;
+using ArgentToolkit;
 
 namespace ArchiveStore
 {
@@ -20,33 +21,13 @@ namespace ArchiveStore
     //   • ShowError           : erreurs et blocages ;
     //   • ShowTest            : bouton « Afficher des toasts de test » des réglages.
     //
-    // PLUSIEURS TOASTS À LA FOIS (réglage ToastMode) :
-    //   • « L'un après l'autre » (défaut) : un seul visible ; les suivants attendent leur tour (file d'attente) ;
-    //   • « Superposés » : jusqu'à MaxStacked visibles, empilés vers le haut depuis le coin inférieur droit ;
-    //     au-delà, les suivants attendent qu'une place se libère.
-    // La file d'attente est plafonnée (MaxPending) : en cas d'inondation, les toasts en trop sont abandonnés
-    // (et notés dans le journal) plutôt que de défiler pendant des minutes. Aucune information n'est perdue :
-    // la notification de Playnite existe toujours.
-    //
-    // PÉDAGOGIE — Visible et Pending ne sont lus et modifiés que sur le thread UI (BeginInvoke) : pas besoin de verrou.
+    // L'AFFICHAGE (carte en bas à droite, file d'attente, empilement, règle « pendant une partie ») est fait
+    // par ToastService, dans la boîte à outils partagée ArgentToolkit. Ici, on garde ce qui est propre à
+    // ArchiveStore : les cases par catégorie, les titres, le nettoyage du texte et les réglages.
     // ======================================================================
     internal static class ToastHelper
     {
-        private const int MaxStacked = 4;     // toasts visibles en même temps en mode « Superposés »
-        private const int MaxPending = 20;    // toasts en attente au maximum
         private const int MaxMessageChars = 240; // un message plus long est coupé (le détail reste dans la notification)
-        private const double StackGap = -6;   // chevauchement léger des marges transparentes : cartes bien rapprochées
-
-        private sealed class PendingToast
-        {
-            public string Title;
-            public string Message;
-            public string Hint;
-        }
-
-        private static readonly List<ToastWindow> Visible = new List<ToastWindow>(); // du plus ancien (en bas) au plus récent
-        private static readonly Queue<PendingToast> Pending = new Queue<PendingToast>();
-        private static ToastStackMode _mode = ToastStackMode.OneAfterAnother;        // dernier réglage lu
 
         // ------------------------------------------------------------------
         // Points d'entrée
@@ -121,120 +102,18 @@ namespace ArchiveStore
         }
 
         // ------------------------------------------------------------------
-        // Mise en file d'attente et affichage (thread UI)
+        // Transmission à ToastService (boîte à outils partagée)
         // ------------------------------------------------------------------
         private static void Enqueue(IPlayniteAPI api, PluginSettings settings, string title, string message, string hint)
         {
-            // Réglages lus ICI (valeurs simples) puis transmises au thread UI.
-            bool duringGame = settings.ToastsDuringGame;
-            ToastStackMode mode = settings.ToastMode;
             string cleanText = CleanMessage(message);
             if (cleanText.Length == 0) return;
 
-            var app = Application.Current;
-            if (app == null) return;
+            ToastLayout layout = settings.ToastMode == ToastStackMode.Stacked
+                ? ToastLayout.Stacked
+                : ToastLayout.OneAfterAnother;
 
-            app.Dispatcher.BeginInvoke(new Action(() =>
-            {
-                try
-                {
-                    _mode = mode;
-
-                    // « Y compris pendant une partie » décoché : le toast n'apparaît que si Playnite est au premier
-                    // plan ET qu'aucun jeu n'est en cours de lancement ou d'exécution.
-                    if (!duringGame && !MayShowOutsideGame(api, title))
-                        return;
-
-                    if (Pending.Count >= MaxPending)
-                    {
-                        ArchiveLog.Warn("Toast abandonné (trop de toasts en attente) : " + title);
-                        return;
-                    }
-
-                    Pending.Enqueue(new PendingToast { Title = title, Message = cleanText, Hint = hint });
-                    ShowPending();
-                }
-                catch (Exception ex)
-                {
-                    ArchiveLog.Warn("Toast impossible : " + ex.Message);
-                }
-            }));
-        }
-
-        // Vrai si Playnite est au premier plan et qu'aucun jeu ne tourne. Thread UI.
-        private static bool MayShowOutsideGame(IPlayniteAPI api, string title)
-        {
-            var app = Application.Current;
-            if (app == null) return false;
-
-            bool inFront = false;
-            foreach (Window w in app.Windows)
-            {
-                if (w is ToastWindow) continue;
-                if (w.IsActive) { inFront = true; break; }
-            }
-            if (!inFront)
-            {
-                ArchiveLog.Info("Toast non affiché (Playnite n'est pas au premier plan et « pendant une partie » est décoché) : " + title);
-                return false;
-            }
-
-            if (api != null && api.Database.Games.Any(g => g.IsRunning || g.IsLaunching))
-            {
-                ArchiveLog.Info("Toast non affiché (un jeu est en cours et « pendant une partie » est décoché) : " + title);
-                return false;
-            }
-            return true;
-        }
-
-        // Nombre de toasts visibles autorisés en même temps selon la disposition choisie.
-        private static int Capacity()
-        {
-            return _mode == ToastStackMode.Stacked ? MaxStacked : 1;
-        }
-
-        // Affiche autant de toasts en attente que la place le permet. Thread UI.
-        private static void ShowPending()
-        {
-            while (Pending.Count > 0 && Visible.Count < Capacity())
-            {
-                var next = Pending.Dequeue();
-                ToastWindow win = null;
-                try
-                {
-                    win = new ToastWindow(next.Title, next.Message, next.Hint);
-                    Visible.Add(win);
-
-                    // Quand un toast se ferme : on le retire, on redescend les autres, on affiche le suivant.
-                    win.Closed += (s, e) =>
-                    {
-                        Visible.Remove((ToastWindow)s);
-                        Relayout();
-                        ShowPending();
-                    };
-                    win.Show();
-                }
-                catch (Exception ex)
-                {
-                    if (win != null) Visible.Remove(win);
-                    ArchiveLog.Warn("Toast impossible : " + ex.Message);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Replace tous les toasts visibles : le plus ancien en bas, les suivants empilés au-dessus.
-        /// Appelé par chaque toast quand sa hauteur est connue, et à chaque fermeture. Thread UI.
-        /// </summary>
-        public static void Relayout()
-        {
-            double offset = 0;
-            foreach (var w in Visible.ToList())
-            {
-                if (!w.IsLoaded || w.ActualHeight <= 0) continue; // sa hauteur n'est pas encore connue
-                w.PlaceAt(offset);
-                offset += w.ActualHeight + StackGap;
-            }
+            ToastService.Show(title, cleanText, hint, settings.ToastsDuringGame, layout);
         }
     }
 }

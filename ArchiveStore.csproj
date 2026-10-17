@@ -9,8 +9,14 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="PlayniteSDK" Version="6.17.0" />
+		<PackageReference Include="PlayniteSDK" Version="6.18.0" />
 	</ItemGroup>
+
+	<!-- Boîte à outils « console » partagée (dossier ..\ArgentToolkit) : fichiers dans source\, avec les fenêtres. -->
+	<PropertyGroup>
+		<ArgentToolkitLinkFolder>source\</ArgentToolkitLinkFolder>
+	</PropertyGroup>
+	<Import Project="..\ArgentToolkit\ArgentToolkit.props" />
 
 	<ItemGroup>
 		<None Include="extension.yaml">

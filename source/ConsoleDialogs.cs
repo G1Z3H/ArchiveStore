@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
 using Playnite.SDK;
+using ArgentToolkit;
 
 namespace ArchiveStore
 {

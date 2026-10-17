@@ -13,6 +13,7 @@ using Playnite.SDK;
 using Playnite.SDK.Events;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
+using ArgentToolkit;
 
 namespace ArchiveStore
 {
@@ -255,9 +256,10 @@ namespace ArchiveStore
             // Sans HasSettings = true, Playnite n'affiche pas l'écran de paramètres.
             Properties = new LibraryPluginProperties { HasSettings = true };
 
-            // MANETTE : les fenêtres « console » (InstallDialog, ProgressWindow…) reçoivent les boutons de la
-            // manette par l'intermédiaire de GamepadHelper (voir ConsoleWindow.cs).
-            GamepadHelper.Initialize(api);
+            // MANETTE, STYLE, TOASTS : boîte à outils « console » partagée (dossier ArgentToolkit), branchée sur
+            // notre journal. Les fenêtres « console » (InstallDialog, ProgressWindow…) reçoivent les boutons de la
+            // manette par l'intermédiaire de GamepadHelper (voir ArgentToolkit\src\ConsoleWindow.cs).
+            Toolkit.Initialize(api, ArchiveLog.Info, ArchiveLog.Warn);
         }
 
         // ------------------------------------------------------------------

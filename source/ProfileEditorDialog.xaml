@@ -1,17 +1,18 @@
-<local:ConsoleWindow x:Class="ArchiveStore.ProfileEditorDialog"
+<tk:ConsoleWindow x:Class="ArchiveStore.ProfileEditorDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:ArchiveStore"
+        xmlns:tk="clr-namespace:ArgentToolkit"
         Title="ArchiveStore — Profil"
         Width="1048">
 
-    <local:ConsoleWindow.Resources>
+    <tk:ConsoleWindow.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="ConsoleStyle.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
-    </local:ConsoleWindow.Resources>
+    </tk:ConsoleWindow.Resources>
 
     <!--
         Édition d'UN profil : son nom, ses sources (dossiers d'archives), ses destinations (dossiers
@@ -26,7 +27,7 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="40,32,40,6">
-            <local:ConsoleHeader Section="Profil"/>
+            <tk:ConsoleHeader Section="Profil"/>
             <TextBlock x:Name="TitleText" Style="{StaticResource TitleStyle}" TextTrimming="CharacterEllipsis" Margin="0,4,0,0"/>
         </StackPanel>
 
@@ -47,11 +48,11 @@
                         MinWidth="160"
                         Click="BtnDone_Click"/>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <local:PadHint Pad="D" Label="Naviguer"/>
-                    <local:PadHint Pad="A" Label="Choisir"/>
-                    <local:PadHint Pad="B" Label="Terminé"/>
+                    <tk:PadHint Pad="D" Label="Naviguer"/>
+                    <tk:PadHint Pad="A" Label="Choisir"/>
+                    <tk:PadHint Pad="B" Label="Terminé"/>
                 </StackPanel>
             </DockPanel>
         </Border>
     </Grid>
-</local:ConsoleWindow>
+</tk:ConsoleWindow>

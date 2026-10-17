@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using ArgentToolkit;
 
 namespace ArchiveStore
 {
@@ -44,11 +45,11 @@ namespace ArchiveStore
 
         // Couleurs de la jauge : mêmes que InstallDialog.
         private static readonly Brush VertJauge =
-            new SolidColorBrush(Color.FromRgb(166, 227, 161)); // #a6e3a1
+            ThemePalette.Brush(ThemePalette.Green);
         private static readonly Brush Orange =
-            new SolidColorBrush(Color.FromRgb(250, 179, 135)); // #fab387
+            ThemePalette.Brush(ThemePalette.Orange);
         private static readonly Brush Rouge =
-            new SolidColorBrush(Color.FromRgb(243, 139, 168)); // #f38ba8
+            ThemePalette.Brush(ThemePalette.Red);
 
         // Une ligne = une case + l'installeur qu'elle représente.
         private sealed class Row

@@ -1,17 +1,18 @@
-<local:ConsoleWindow x:Class="ArchiveStore.DestinationPickerDialog"
+<tk:ConsoleWindow x:Class="ArchiveStore.DestinationPickerDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:ArchiveStore"
+        xmlns:tk="clr-namespace:ArgentToolkit"
         Title="ArchiveStore — Destination d'installation"
         Width="860">
 
-    <local:ConsoleWindow.Resources>
+    <tk:ConsoleWindow.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="ConsoleStyle.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
-    </local:ConsoleWindow.Resources>
+    </tk:ConsoleWindow.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -20,7 +21,7 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="40,32,40,24">
-            <local:ConsoleHeader Section="Destination"/>
+            <tk:ConsoleHeader Section="Destination"/>
 
             <TextBlock x:Name="TitleText" Style="{StaticResource TitleStyle}"/>
 
@@ -53,11 +54,11 @@
                             Click="BtnConfirm_Click"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <local:PadHint Pad="D" Label="Naviguer"/>
-                    <local:PadHint Pad="A" Label="Valider"/>
-                    <local:PadHint Pad="B" Label="Annuler"/>
+                    <tk:PadHint Pad="D" Label="Naviguer"/>
+                    <tk:PadHint Pad="A" Label="Valider"/>
+                    <tk:PadHint Pad="B" Label="Annuler"/>
                 </StackPanel>
             </DockPanel>
         </Border>
     </Grid>
-</local:ConsoleWindow>
+</tk:ConsoleWindow>

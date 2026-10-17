@@ -1,17 +1,18 @@
-<local:ConsoleWindow x:Class="ArchiveStore.ConsoleSettingsWindow"
+<tk:ConsoleWindow x:Class="ArchiveStore.ConsoleSettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:ArchiveStore"
+        xmlns:tk="clr-namespace:ArgentToolkit"
         Title="ArchiveStore — Réglages"
         Width="1228">
 
-    <local:ConsoleWindow.Resources>
+    <tk:ConsoleWindow.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="ConsoleStyle.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
-    </local:ConsoleWindow.Resources>
+    </tk:ConsoleWindow.Resources>
 
     <!--
         Réglages d'ArchiveStore pour la manette (mode Plein écran) — mêmes réglages que l'écran classique du
@@ -38,7 +39,7 @@
                     CornerRadius="19,0,0,0"
                     Padding="22,30,22,16">
                 <DockPanel>
-                    <local:ConsoleHeader DockPanel.Dock="Top" Section="Réglages"/>
+                    <tk:ConsoleHeader DockPanel.Dock="Top" Section="Réglages"/>
                     <ScrollViewer Focusable="False"
                                   VerticalScrollBarVisibility="Hidden"
                                   HorizontalScrollBarVisibility="Disabled">
@@ -85,13 +86,13 @@
                             Click="BtnSave_Click"/>
                 </StackPanel>
                 <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <local:PadHint Pad="D" Label="Naviguer"/>
-                    <local:PadHint Pad="H" Label="Catégories"/>
-                    <local:PadHint Pad="A" Label="Choisir"/>
-                    <local:PadHint Pad="Y" Label="Enregistrer"/>
-                    <local:PadHint Pad="B" Label="Annuler"/>
+                    <tk:PadHint Pad="D" Label="Naviguer"/>
+                    <tk:PadHint Pad="H" Label="Catégories"/>
+                    <tk:PadHint Pad="A" Label="Choisir"/>
+                    <tk:PadHint Pad="Y" Label="Enregistrer"/>
+                    <tk:PadHint Pad="B" Label="Annuler"/>
                 </WrapPanel>
             </DockPanel>
         </Border>
     </Grid>
-</local:ConsoleWindow>
+</tk:ConsoleWindow>
