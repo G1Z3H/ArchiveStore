@@ -4,7 +4,15 @@
 
 ArchiveStore est une extension de bibliothèque pour Playnite. Elle transforme un simple dossier de jeux (un sous-dossier par jeu) en une vraie bibliothèque : les jeux apparaissent dans Playnite avec leur jaquette, leur taille, et les boutons natifs de Playnite, comme sur Steam ou Epic.
 
-Version actuelle : **1.0.1**.
+Version actuelle : **1.1.0**.
+
+> **Nouveau en 1.1.0 :** avec Argent 1.5.0 en Plein écran, les actions du menu du jeu (Installer les DLC et patchs, Réassocier l'exécutable, Choisir la destination d'installation) ont leur bouton « ArchiveStore » sur la fiche du jeu, et leur entrée « ArchiveStore » dans le menu Options d'un jeu de la bibliothèque : elles ne sont plus sous « Extensions ». En mode Bureau, ou sans Argent, rien ne change.
+
+> **Nouveau en 1.0.4 :** les réponses à tes actions de menu (« Installer les DLC et patchs », « Choisir la destination d'installation », « Réassocier l'exécutable », « Basculer le profil ») s'affichent maintenant dans une petite fenêtre avec « OK », devant toi, au lieu d'une notification : rien à installer, tous les DLC et patchs déjà installés, aucun DLC trouvé, action impossible, choix enregistré… Chaque action se règle à part (Notifications et toasts > « Réponses à tes actions ») : « Fenêtre » (par défaut) ou « Notification et toast », comme avant. Ce qui arrive plus tard (installation terminée, nouveaux DLC détectés…) reste en notification. Correctif : en Plein écran, « Installer les DLC et patchs » sans rien à installer ne fait plus perdre la main à Playnite (la manette répondait à une autre fenêtre).
+
+> **Nouveau en 1.0.3 :** avec Argent, les notifications et les toasts de l'extension sont réunis sur une seule page, « ArchiveStore · Notifications et toasts », dans la catégorie « Notifications » d'Argent. Sans Argent, rien ne change.
+
+> **Nouveau en 1.0.2 :** avec Argent, les pages « Notifications » et « Toasts » de l'extension sont dans la catégorie « Notifications » de la Personnalisation d'Argent (et plus dans « Compatibles Argent »). Ses toasts d'erreur le disent à Argent (« Ne pas déranger » peut les laisser passer) et tous ses toasts vont dans l'historique d'Argent. Sans Argent, rien ne change : la fenêtre de réglages de l'extension reste complète.
 
 > **Nouveau en 1.0.1 :** les toasts rejoignent la pile commune des plugins Argent (boîte à outils ArgentToolkit) : ils s'empilent toujours, le plus ancien en haut. Le réglage « Quand plusieurs toasts arrivent en même temps » (l'un après l'autre / superposés) est retiré : il ne servait plus. Durée et nombre de toasts se règlent dans Argent (Personnalisation > Notifications). Un ancien fichier de réglages reste lisible.
 

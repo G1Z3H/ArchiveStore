@@ -855,6 +855,14 @@ namespace ArchiveStore
         // La source n'est JAMAIS modifiée ; rien n'est supprimé.
         // ==================================================================
 
+        // Réponse du menu « Installer les DLC et patchs » : fenêtre à l'écran (par défaut) ou notification et toast,
+        // selon le réglage « Réponses à tes actions » (voir ActionReply). Utilisable depuis n'importe quel thread.
+        private void ReplyExtras(string id, string title, string message, NotificationType type)
+        {
+            ActionReply.Show(_settings, ReplyCategory.Extras, title, message, type == NotificationType.Error,
+                () => Notify(id, message, type));
+        }
+
         // Garde-fou : un seul traitement d'extras à la fois pour un même jeu (double clic, etc.).
         private static readonly HashSet<Guid> _extrasBusy = new HashSet<Guid>();
 
@@ -873,7 +881,7 @@ namespace ArchiveStore
             var sources = profile?.GetSources();
             if (profile == null || sources == null || sources.Count == 0)
             {
-                Notify("ArchiveStore_ExtrasMenu",
+                ReplyExtras("ArchiveStore_ExtrasMenu", "Recherche impossible",
                     "ArchiveStore : aucun profil actif avec une Source configurée : impossible de chercher les DLC et patchs.",
                     NotificationType.Error);
                 return;
@@ -882,7 +890,7 @@ namespace ArchiveStore
             string destDir = Game.InstallDirectory;
             if (string.IsNullOrEmpty(destDir) || !Directory.Exists(destDir))
             {
-                Notify("ArchiveStore_ExtrasMenu",
+                ReplyExtras("ArchiveStore_ExtrasMenu", "Dossier du jeu introuvable",
                     $"ArchiveStore : le dossier d'installation de '{Game.Name}' est introuvable.",
                     NotificationType.Error);
                 return;
@@ -892,7 +900,7 @@ namespace ArchiveStore
             string sourceGameDir = ArchiveScanner.FindGameSourceDir(sources, Game.GameId);
             if (sourceGameDir == null)
             {
-                Notify("ArchiveStore_ExtrasMenu",
+                ReplyExtras("ArchiveStore_ExtrasMenu", "Dossier source introuvable",
                     $"ArchiveStore : dossier source de '{Game.Name}' introuvable dans le profil '{profile.Name}'. " +
                     "Une source est peut-être inaccessible (disque ou NAS débranché ou éteint).",
                     NotificationType.Error);
@@ -903,7 +911,7 @@ namespace ArchiveStore
             {
                 if (!_extrasBusy.Add(Game.Id))
                 {
-                    Notify("ArchiveStore_ExtrasMenu",
+                    ReplyExtras("ArchiveStore_ExtrasMenu", "Déjà en cours",
                         $"ArchiveStore : une installation de DLC et patchs est déjà en cours pour '{Game.Name}'.",
                         NotificationType.Info);
                     return;
@@ -936,8 +944,11 @@ namespace ArchiveStore
                 };
 
                 // --- Recherche (lecture de fichiers : hors thread UI) ---
+                // Propriétaire : la fenêtre principale de Playnite (le menu du jeu, d'où l'on vient, se ferme entre-temps ;
+                // sans lui, Windows rendrait la main à une autre fenêtre que Playnite à la fermeture).
                 if (interactive)
-                    analysis = OpenProgress(0, "Recherche des DLC et patchs…", "Analyse du dossier source…", false, null);
+                    analysis = OpenProgress(0, "Recherche des DLC et patchs…", "Analyse du dossier source…", false, null,
+                                            ownedByMain: true);
                 else
                     ShowProgress($"Recherche des DLC et patchs de '{Game.Name}'…", null);
 
@@ -959,6 +970,7 @@ namespace ArchiveStore
                 finally
                 {
                     CloseProgress(analysis);
+                    if (analysis != null) ActionReply.ReturnToPlaynite();   // quoi qu'il arrive ensuite, la main revient à Playnite
                     analysis = null;
                     RemoveProgress();
                 }
@@ -966,7 +978,7 @@ namespace ArchiveStore
                 if (!IsRecognizedInstaller(scan.DetectedType) && scan.DetectedType != InstallerType.Unknown)
                 {
                     ArchiveLog.Info($"Menu DLC et patchs de '{Game.Name}' : jeu portable (type détecté {scan.DetectedType}), rien à installer.");
-                    Notify("ArchiveStore_ExtrasMenuNone",
+                    ReplyExtras("ArchiveStore_ExtrasMenuNone", "Rien à installer",
                         $"ArchiveStore : '{Game.Name}' a été copié tel quel (jeu portable) : ses DLC et patchs, " +
                         "s'il y en a, sont déjà inclus dans la copie.",
                         NotificationType.Info);
@@ -975,7 +987,7 @@ namespace ArchiveStore
 
                 if (found == null)
                 {
-                    Notify("ArchiveStore_ExtrasMenu",
+                    ReplyExtras("ArchiveStore_ExtrasMenu", "Recherche impossible",
                         $"ArchiveStore : recherche des DLC et patchs de '{Game.Name}' impossible. Détails : archivestore.log.",
                         NotificationType.Error);
                     return;
@@ -988,7 +1000,7 @@ namespace ArchiveStore
                 if (found.Installers.Count == 0 && found.Manual.Count == 0)
                 {
                     ArchiveLog.Info($"Menu DLC et patchs de '{Game.Name}' : aucun dossier de DLC ou de patchs (nom commençant par « __ »), ou ils sont vides.");
-                    Notify("ArchiveStore_ExtrasMenuNone",
+                    ReplyExtras("ArchiveStore_ExtrasMenuNone", "Aucun DLC ni patch",
                         $"ArchiveStore : aucun dossier de DLC ou de patchs trouvé pour '{Game.Name}'. " +
                         "Leur nom doit commencer par deux underscores et contenir DLC, patch ou update (par exemple « __DLC » ou « __Patch »).",
                         NotificationType.Info);
@@ -1001,7 +1013,7 @@ namespace ArchiveStore
                 if (found.Installers.Count == 0 && !windowPossible)
                 {
                     ArchiveLog.Info($"Menu DLC et patchs de '{Game.Name}' : seulement des fichiers non reconnus, et pas de fenêtre de choix.");
-                    Notify("ArchiveStore_ExtrasMenuNone",
+                    ReplyExtras("ArchiveStore_ExtrasMenuNone", "Fichiers non reconnus",
                         $"ArchiveStore : dossier de DLC ou de patchs trouvé pour '{Game.Name}', mais {DescribeNotRecognized(found.NotRecognized)} : " +
                         "type d'installeur non reconnu. Ils ne se lancent qu'à la main, depuis la fenêtre de choix " +
                         "(« Installation directe » décochée et confirmation activée).",
@@ -1019,7 +1031,7 @@ namespace ArchiveStore
                 if (pending.Count == 0 && pendingManual.Count == 0)
                 {
                     ArchiveLog.Info($"Menu DLC et patchs de '{Game.Name}' : les {found.Installers.Count + found.Manual.Count} extra(s) trouvé(s) sont déjà installés.");
-                    Notify("ArchiveStore_ExtrasMenuNone",
+                    ReplyExtras("ArchiveStore_ExtrasMenuNone", "Déjà installés",
                         $"ArchiveStore : tous les DLC et patchs trouvés pour '{Game.Name}' sont déjà installés.",
                         NotificationType.Info);
                     return;
@@ -1046,7 +1058,7 @@ namespace ArchiveStore
                 if (plan != null && plan.MarkedOnly)
                 {
                     // « Déjà installés » : seulement noté en mémoire, rien n'a été lancé.
-                    Notify("ArchiveStore_ExtrasMarked", $"'{Game.Name}' :{plan.Summary}", NotificationType.Info);
+                    ReplyExtras("ArchiveStore_ExtrasMarked", "Noté comme installé", $"'{Game.Name}' :{plan.Summary}", NotificationType.Info);
                     return;
                 }
                 if (plan == null || !plan.Install) return; // erreur ou rien à faire : déjà signalé
@@ -1056,7 +1068,7 @@ namespace ArchiveStore
                 if (!ArchiveScanner.HasEnoughSpace(plan.ExtrasBytes, free))
                 {
                     ArchiveLog.Warn($"Menu DLC et patchs de '{Game.Name}' : espace insuffisant. " + DescribeSpace(plan.ExtrasBytes, free));
-                    Notify("ArchiveStore_ExtrasNoSpace",
+                    ReplyExtras("ArchiveStore_ExtrasNoSpace", "Pas assez de stockage",
                         $"ArchiveStore : pas assez de stockage pour installer {plan.What} sur '{Game.Name}'. " +
                         DescribeSpace(plan.ExtrasBytes, free) +
                         $" Il manque environ {ArchiveScanner.FormatSize(ArchiveScanner.GetMissingSpace(plan.ExtrasBytes, free))}. " +

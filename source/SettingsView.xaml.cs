@@ -101,6 +101,12 @@ namespace ArchiveStore
             ChkNotifyInstallInfo.IsChecked = _settings.NotifyInstallInfo;
             ChkNotifyMenu.IsChecked = _settings.NotifyMenuConfirmations;
 
+            // « Réponses à tes actions » : 0 = Fenêtre (par défaut), 1 = Notification et toast.
+            CmbReplyExtras.SelectedIndex = _settings.ReplyWindowExtras ? 0 : 1;
+            CmbReplyDestination.SelectedIndex = _settings.ReplyWindowDestination ? 0 : 1;
+            CmbReplyReassociate.SelectedIndex = _settings.ReplyWindowReassociate ? 0 : 1;
+            CmbReplyProfile.SelectedIndex = _settings.ReplyWindowProfile ? 0 : 1;
+
             // Cases « Toasts » (en plus des notifications) : valeurs initiales AVANT les gestionnaires.
             ChkToastNewExtras.IsChecked = _settings.ToastNewExtras;
             ChkToastMissingPaths.IsChecked = _settings.ToastMissingPaths;
@@ -142,6 +148,10 @@ namespace ArchiveStore
             ChkNotifySummaries.Unchecked += (s, e) => { _settings.NotifySummaries = false; UpdateToastStates(); };
             ChkNotifyInstallInfo.Checked += (s, e) => { _settings.NotifyInstallInfo = true; UpdateToastStates(); };
             ChkNotifyInstallInfo.Unchecked += (s, e) => { _settings.NotifyInstallInfo = false; UpdateToastStates(); };
+            CmbReplyExtras.SelectionChanged += (s, e) => { _settings.ReplyWindowExtras = CmbReplyExtras.SelectedIndex != 1; UpdateToastStates(); };
+            CmbReplyDestination.SelectionChanged += (s, e) => { _settings.ReplyWindowDestination = CmbReplyDestination.SelectedIndex != 1; UpdateToastStates(); };
+            CmbReplyReassociate.SelectionChanged += (s, e) => { _settings.ReplyWindowReassociate = CmbReplyReassociate.SelectedIndex != 1; UpdateToastStates(); };
+            CmbReplyProfile.SelectionChanged += (s, e) => { _settings.ReplyWindowProfile = CmbReplyProfile.SelectedIndex != 1; UpdateToastStates(); };
             ChkNotifyMenu.Checked += (s, e) => { _settings.NotifyMenuConfirmations = true; UpdateToastStates(); };
             ChkNotifyMenu.Unchecked += (s, e) => { _settings.NotifyMenuConfirmations = false; UpdateToastStates(); };
 
@@ -210,7 +220,10 @@ namespace ArchiveStore
             SetEnabled(ChkToastDuplicates, _settings.NotifyDuplicates);
             SetEnabled(ChkToastSummaries, _settings.NotifySummaries);
             SetEnabled(ChkToastInstallInfo, _settings.NotifyInstallInfo);
-            SetEnabled(ChkToastMenu, _settings.NotifyMenuConfirmations);
+            // « Confirmations de menu » ne sert qu'aux actions réglées sur « Notification et toast ».
+            bool menuNotifications = _settings.AnyReplyAsNotification();
+            SetEnabled(ChkNotifyMenu, menuNotifications);
+            SetEnabled(ChkToastMenu, _settings.NotifyMenuConfirmations && menuNotifications);
         }
 
         private static void SetEnabled(CheckBox box, bool enabled)

@@ -322,6 +322,8 @@ namespace ArchiveStore
 
             // COMPATIBLES ARGENT : avec le thème Argent, nos réglages sont dans sa fenêtre Personnalisation (voir ArgentSettings.cs).
             new ArgentSettings(_settings, api, PluginGuid).Register();
+            // Avec Argent (Plein écran) : les actions du menu du jeu vont sur la fiche du jeu et dans le menu Options de la bibliothèque.
+            ArgentBridge.RegisterGameActions(PluginGuid, "ArchiveStore", GameActionsForArgent);
         }
 
         // ------------------------------------------------------------------
@@ -1015,8 +1017,29 @@ namespace ArchiveStore
         // ==================================================================
         // SCÉNARIO 4 — MENU CONTEXTUEL (Bureau : clic droit ; Plein écran : sous le jeu → Extensions)
         // ==================================================================
+        // Avec Argent en Plein écran (HostsGameActions) : ces actions sont sur la fiche du jeu et dans le menu Options de la
+        // bibliothèque (voir GameActionsForArgent), plus sous « Extensions ». Mode Bureau : rien ne change.
         public override IEnumerable<GameMenuItem> GetGameMenuItems(GetGameMenuItemsArgs args)
         {
+            if (ArgentBridge.HostsGameActions(_api)) yield break;
+
+            foreach (var action in GameActions(args.Games))
+            {
+                var run = action.Value;
+                yield return new GameMenuItem
+                {
+                    Description = action.Key + " (ArchiveStore)",
+                    Action = _ => run()
+                };
+            }
+        }
+
+        // Les actions du menu du jeu (texte, action), pour les jeux choisis. Les mêmes pour Playnite et pour Argent.
+        private List<KeyValuePair<string, Action>> GameActions(IEnumerable<Game> games)
+        {
+            var actions = new List<KeyValuePair<string, Action>>();
+            var chosen = (games ?? Enumerable.Empty<Game>()).Where(g => g != null).ToList();
+
             // PLUSIEURS DESTINATIONS — jeux ArchiveStore PAS ENCORE installés : on propose de leur choisir à
             // l'avance une destination (ex. un vieux jeu sur le disque Windows). Le menu ne lit RIEN sur le
             // disque : il s'affiche à chaque clic droit. Il n'apparaît que si le profil actif a au moins
@@ -1024,38 +1047,28 @@ namespace ArchiveStore
             var activeProfile = _settings.GetActiveProfile();
             if (activeProfile != null && activeProfile.GetDestinations().Count > 1)
             {
-                var notInstalled = args.Games
+                var notInstalled = chosen
                     .Where(g => g.PluginId == Id && !g.IsInstalled && !string.IsNullOrEmpty(g.GameId))
                     .ToList();
 
                 if (notInstalled.Count > 0)
-                {
-                    yield return new GameMenuItem
-                    {
-                        Description = "Choisir la destination d'installation (ArchiveStore)",
-                        Action = _ => ChooseDestination(notInstalled)
-                    };
-                }
+                    actions.Add(new KeyValuePair<string, Action>("Choisir la destination d'installation", () => ChooseDestination(notInstalled)));
             }
 
-            var targets = args.Games
+            var targets = chosen
                 .Where(g => g.PluginId == Id
                          && g.IsInstalled
                          && !string.IsNullOrEmpty(g.InstallDirectory)
                          && Directory.Exists(g.InstallDirectory))
                 .ToList();
 
-            if (targets.Count == 0) yield break;
+            if (targets.Count == 0) return actions;
 
-            yield return new GameMenuItem
+            actions.Add(new KeyValuePair<string, Action>("Réassocier l'exécutable", () =>
             {
-                Description = "Réassocier l'exécutable (ArchiveStore)",
-                Action = _ =>
-                {
-                    foreach (var game in targets)
-                        ReassociateExe(game);
-                }
-            };
+                foreach (var game in targets)
+                    ReassociateExe(game);
+            }));
 
             // DLC et patchs après coup : un seul jeu à la fois (une fenêtre de choix par jeu, ce serait
             // confus avec plusieurs jeux sélectionnés). La recherche se fait AU CLIC, pas ici : le menu
@@ -1063,12 +1076,21 @@ namespace ArchiveStore
             if (targets.Count == 1)
             {
                 var target = targets[0];
-                yield return new GameMenuItem
-                {
-                    Description = "Installer les DLC et patchs (ArchiveStore)",
-                    Action = _ => new ArchiveInstallController(target, _settings, _api).InstallExtrasFromMenu()
-                };
+                actions.Add(new KeyValuePair<string, Action>("Installer les DLC et patchs",
+                    () => new ArchiveInstallController(target, _settings, _api).InstallExtrasFromMenu()));
             }
+            return actions;
+        }
+
+        // Pour Argent : les actions d'UN jeu (fiche du jeu, menu Options de la bibliothèque).
+        private IList<object> GameActionsForArgent(Guid gameId)
+        {
+            var lines = new List<object>();
+            var game = _api.Database.Games.Get(gameId);
+            if (game == null || game.PluginId != Id) return lines;
+            foreach (var action in GameActions(new[] { game }))
+                lines.Add(ArgentBridge.Action(action.Key, action.Value));
+            return lines;
         }
 
         // Appelé depuis un menu : on est sur le thread UI.
@@ -1105,16 +1127,18 @@ namespace ArchiveStore
 
             string label = choices.First(c => ArchiveScanner.SamePath(c.FolderPath, dlg.SelectedRoot)).Label;
             ArchiveLog.Info($"Destination choisie pour {games.Count} jeu(x) ({string.Join(", ", games.Select(g => g.GameId))}) : '{dlg.SelectedRoot}'.");
-            if (_settings.IsNotifyEnabled(NotifyCategory.MenuConfirmations))
+            string destChosenMsg =
+                (games.Count > 1
+                    ? $"ArchiveStore : {games.Count} jeux seront installés dans « {label} »."
+                    : $"ArchiveStore : '{games[0].Name}' sera installé dans « {label} ».") +
+                " Rien n'est encore installé : cliquez sur Installer quand vous voulez.";
+            // Réponse : fenêtre (par défaut) ou notification et toast (réglage « Réponses à tes actions »).
+            ActionReply.Show(_settings, ReplyCategory.Destination, "Destination mémorisée", destChosenMsg, false, () =>
             {
-                string destChosenMsg =
-                    (games.Count > 1
-                        ? $"ArchiveStore : {games.Count} jeux seront installés dans « {label} »."
-                        : $"ArchiveStore : '{games[0].Name}' sera installé dans « {label} ».") +
-                    " Rien n'est encore installé : cliquez sur Installer quand vous voulez.";
+                if (!_settings.IsNotifyEnabled(NotifyCategory.MenuConfirmations)) return;
                 _api.Notifications.Add(new NotificationMessage("ArchiveStore_DestChosen", destChosenMsg, NotificationType.Info));
                 ToastHelper.ShowForCategory(_api, _settings, NotifyCategory.MenuConfirmations, destChosenMsg);
-            }
+            });
         }
 
         // Appelé depuis un menu : on est sur le thread UI.
@@ -1124,9 +1148,13 @@ namespace ArchiveStore
             // vide sans issue, on explique plutôt le problème.
             if (ArchiveScanner.FindGameExes(game.InstallDirectory, _settings.ExcludedExePatterns).Count == 0)
             {
-                _api.Dialogs.ShowErrorMessage(
-                    $"Aucun exécutable de jeu trouvé dans :\n{game.InstallDirectory}",
-                    "ArchiveStore");
+                // Réponse : fenêtre (par défaut) ou notification d'erreur et toast (réglage « Réponses à tes actions »).
+                string noExeMsg = $"ArchiveStore : aucun exécutable de jeu trouvé dans « {game.InstallDirectory} ».";
+                ActionReply.Show(_settings, ReplyCategory.Reassociate, "Aucun exécutable", noExeMsg, true, () =>
+                {
+                    _api.Notifications.Add(new NotificationMessage("ArchiveStore_ReassocNone_" + game.Id, noExeMsg, NotificationType.Error));
+                    ToastHelper.ShowError(_api, _settings, noExeMsg);
+                });
                 return;
             }
 
@@ -1146,12 +1174,13 @@ namespace ArchiveStore
             try { _settings.RememberExe(game.GameId, game.InstallDirectory, sel.SelectedExePath); }
             catch (Exception ex) { logger.Warn(ex, "ArchiveStore : mémorisation de l'exécutable impossible."); }
 
-            if (_settings.IsNotifyEnabled(NotifyCategory.MenuConfirmations))
+            string reassocMsg = $"ArchiveStore : '{game.Name}' est maintenant lancé via {Path.GetFileName(sel.SelectedExePath)}.";
+            ActionReply.Show(_settings, ReplyCategory.Reassociate, "Exécutable réassocié", reassocMsg, false, () =>
             {
-                string reassocMsg = $"ArchiveStore : '{game.Name}' est maintenant lancé via {Path.GetFileName(sel.SelectedExePath)}.";
+                if (!_settings.IsNotifyEnabled(NotifyCategory.MenuConfirmations)) return;
                 _api.Notifications.Add(new NotificationMessage("ArchiveStore_Reassoc_" + game.Id, reassocMsg, NotificationType.Info));
                 ToastHelper.ShowForCategory(_api, _settings, NotifyCategory.MenuConfirmations, reassocMsg);
-            }
+            });
         }
 
         // ==================================================================
@@ -1187,14 +1216,15 @@ namespace ArchiveStore
                         {
                             _settings.ActiveProfileName = name;
                             _settings.Save(); // sans ça, le choix serait perdu au redémarrage
-                            if (_settings.IsNotifyEnabled(NotifyCategory.MenuConfirmations))
+                            string switchMsg =
+                                $"ArchiveStore : profil '{name}' activé. " +
+                                "Lancez une mise à jour de la bibliothèque Playnite pour rescanner.";
+                            ActionReply.Show(_settings, ReplyCategory.Profile, "Profil activé", switchMsg, false, () =>
                             {
-                                string switchMsg =
-                                    $"ArchiveStore : profil '{name}' activé. " +
-                                    "Lancez une mise à jour de la bibliothèque Playnite pour rescanner.";
+                                if (!_settings.IsNotifyEnabled(NotifyCategory.MenuConfirmations)) return;
                                 _api.Notifications.Add(new NotificationMessage("ArchiveStore_ProfileSwitch", switchMsg, NotificationType.Info));
                                 ToastHelper.ShowForCategory(_api, _settings, NotifyCategory.MenuConfirmations, switchMsg);
-                            }
+                            });
                         }
                     };
                 }
@@ -2449,13 +2479,16 @@ namespace ArchiveStore
         // et le suivi passe par les notifications. Le choix vaut pour toute l'installation du jeu.
         private volatile bool _backgroundRequested;
 
+        // ownedByMain : la fenêtre appartient à la fenêtre principale de Playnite plutôt qu'à la « fenêtre actuelle » (qui peut
+        // être un menu en train de se fermer : à la fermeture de la nôtre, Windows rendrait alors la main ailleurs).
         private ProgressWindow OpenProgress(long total, string title, string status, bool allowCancel, Action onCancel,
-                                            bool keepFilesOnCancel = false, bool allowBackground = false)
+                                            bool keepFilesOnCancel = false, bool allowBackground = false, bool ownedByMain = false)
         {
             return UiHelper.OnUi<ProgressWindow>(() =>
             {
-                var w = new ProgressWindow(total, title, allowCancel, allowBackground)
-                { Owner = _api.Dialogs.GetCurrentAppWindow() };
+                var w = new ProgressWindow(total, title, allowCancel, allowBackground);
+                ConsoleDialogs.SetOwner(w, ownedByMain ? (ActionReply.PlayniteMain() ?? _api.Dialogs.GetCurrentAppWindow())
+                                                       : _api.Dialogs.GetCurrentAppWindow());
                 if (keepFilesOnCancel) w.KeepFilesOnCancel();
                 w.SetStatus(status);
                 if (onCancel != null)

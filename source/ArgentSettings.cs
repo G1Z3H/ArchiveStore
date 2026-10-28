@@ -58,11 +58,11 @@ namespace ArchiveStore
                     + "(dossiers d'installation).", BuildProfiles)
                     .WithValue(() => { var p = _s.GetActiveProfile(); return p != null ? NameOf(p) : "Aucun"; }),
                 ArgentBridge.Page("Comportement", "Comportement", null, BuildBehavior),
-                ArgentBridge.Page("Notifications", "Notifications",
-                    "Choisissez les notifications que vous voulez voir. Les erreurs et les blocages (échec d'installation, "
-                    + "espace insuffisant, exécutable introuvable…) s'affichent toujours : elles ne peuvent pas être désactivées.",
-                    BuildNotifications),
-                ArgentBridge.Page("Toasts", "Toasts", null, BuildToasts),
+                // Avec Argent : une seule page, dans sa catégorie « Notifications » (les notifications, puis les toasts).
+                ArgentBridge.Page("Notifications et toasts", "Notifications et toasts",
+                    "Choisissez les notifications que vous voulez voir, puis celles qui s'affichent aussi en toast. Les erreurs et les "
+                    + "blocages (échec d'installation, espace insuffisant, exécutable introuvable…) s'affichent toujours en notification.",
+                    BuildNotificationsAndToasts).ForNotifications(),
                 ArgentBridge.Page("DLC et patchs", "DLC et patchs", null, BuildExtras),
                 ArgentBridge.Page("Installeurs non reconnus", "Installeurs non reconnus (cas ambigu)", null, BuildUnknownInstallers),
                 ArgentBridge.Page("Installation silencieuse", "Arguments d'installation silencieuse", null, BuildSilent),
@@ -255,6 +255,49 @@ namespace ArchiveStore
         // ------------------------------------------------------------------
         // Notifications
         // ------------------------------------------------------------------
+        // Les notifications, puis les toasts, sur une seule page.
+        private IList<object> BuildNotificationsAndToasts()
+        {
+            var all = new List<object>();
+            all.Add(ArgentBridge.Section("RÉPONSES À TES ACTIONS"));
+            all.AddRange(BuildReplies());
+            all.Add(ArgentBridge.Section("NOTIFICATIONS"));
+            all.AddRange(BuildNotifications());
+            all.Add(ArgentBridge.Section("TOASTS"));
+            all.AddRange(BuildToasts());
+            return all;
+        }
+
+        // Réponses aux actions de menu : fenêtre (par défaut) ou notification et toast, une ligne par action.
+        private IList<object> BuildReplies()
+        {
+            return new List<object>
+            {
+                ArgentBridge.Note("Quand tu fais une action dans un menu, sa réponse (rien à installer, action impossible, choix "
+                    + "enregistré…) s'affiche dans une fenêtre devant toi, ou en notification et toast, comme tu préfères. "
+                    + "Ce qui arrive plus tard (installation terminée, nouveaux DLC…) reste toujours en notification."),
+                ReplyChoice("Installer les DLC et patchs", "rien à installer, déjà installés, aucun DLC trouvé, blocages",
+                    () => _s.ReplyWindowExtras, v => _s.ReplyWindowExtras = v),
+                ReplyChoice("Choisir la destination d'installation", "destination mémorisée",
+                    () => _s.ReplyWindowDestination, v => _s.ReplyWindowDestination = v),
+                ReplyChoice("Réassocier l'exécutable", "exécutable réassocié ou introuvable",
+                    () => _s.ReplyWindowReassociate, v => _s.ReplyWindowReassociate = v),
+                ReplyChoice("Basculer le profil", "profil activé",
+                    () => _s.ReplyWindowProfile, v => _s.ReplyWindowProfile = v),
+                ArgentBridge.Note("En « Notification et toast », les lignes « Confirmations de menu » ci-dessous s'appliquent.")
+            };
+        }
+
+        private object ReplyChoice(string action, string what, Func<bool> get, Action<bool> set)
+        {
+            var labels = new List<string> { "Fenêtre", "Notification et toast" };
+            return ArgentBridge.Choice(action, action,
+                "Comment afficher la réponse de « " + action + " » (" + what + ") ?",
+                () => labels,
+                () => get() ? 0 : 1,
+                i => { if (i == 0 || i == 1) Set("réponse « " + action + " »", () => set(i == 0)); });
+        }
+
         private IList<object> BuildNotifications()
         {
             return new List<object>
@@ -274,8 +317,10 @@ namespace ArchiveStore
                 ArgentBridge.Note("Donne des précisions pendant l'installation : exécutable choisi automatiquement ou mémorisé, destination "
                     + "de secours utilisée, avancement d'une installation directe. L'avancement d'une copie, qui permet de l'annuler, "
                     + "reste toujours affiché."),
-                ArgentBridge.Switch("Confirmations de menu", () => _s.NotifyMenuConfirmations, v => Set("notification confirmations", () => _s.NotifyMenuConfirmations = v)),
-                ArgentBridge.Note("Confirme vos actions dans les menus : profil activé, destination mémorisée, exécutable réassocié.")
+                ArgentBridge.Switch("Confirmations de menu", () => _s.NotifyMenuConfirmations, v => Set("notification confirmations", () => _s.NotifyMenuConfirmations = v))
+                    .WithEnabled(() => _s.AnyReplyAsNotification()),
+                ArgentBridge.Note("Confirme vos actions dans les menus : profil activé, destination mémorisée, exécutable réassocié. "
+                    + "Seulement pour les actions réglées sur « Notification et toast » (section « Réponses à tes actions »).")
             };
         }
 
@@ -302,7 +347,7 @@ namespace ArchiveStore
                 ArgentBridge.Switch("Infos pendant l'installation", () => _s.ToastInstallInfo, v => Set("toast infos d'installation", () => _s.ToastInstallInfo = v))
                     .WithEnabled(() => _s.NotifyInstallInfo),
                 ArgentBridge.Switch("Confirmations de menu", () => _s.ToastMenuConfirmations, v => Set("toast confirmations", () => _s.ToastMenuConfirmations = v))
-                    .WithEnabled(() => _s.NotifyMenuConfirmations),
+                    .WithEnabled(() => _s.NotifyMenuConfirmations && _s.AnyReplyAsNotification()),
                 ArgentBridge.Switch("Erreurs et blocages", () => _s.ToastErrors, v => Set("toast erreurs", () => _s.ToastErrors = v)),
                 ArgentBridge.Note("Les lignes grisées suivent leur notification : activez-la d'abord (catégorie « Notifications »). "
                     + "Les erreurs restent toujours en notification : cette ligne ajoute seulement un toast."),

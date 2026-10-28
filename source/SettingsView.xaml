@@ -285,6 +285,78 @@
                        TextWrapping="Wrap"
                        Margin="0,0,0,0"/>
 
+            <!-- ============ SECTION : RÉPONSES À TES ACTIONS ============ -->
+            <!-- Une ligne par action de menu : fenêtre avec « OK » (par défaut) ou notification et toast (voir ActionReply). -->
+            <TextBlock Text="RÉPONSES À TES ACTIONS"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="#89b4fa"
+                       Margin="0,24,0,12"/>
+
+            <TextBlock Text="Quand tu fais une action dans un menu, sa réponse (rien à installer, action impossible, choix enregistré…) s'affiche dans une fenêtre devant toi, ou en notification et toast, comme tu préfères. Ce qui arrive plus tard (installation terminée, nouveaux DLC…) reste toujours en notification. En « Notification et toast », les cases « Confirmations de menu » plus bas s'appliquent."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,12"/>
+
+            <TextBlock Text="Installer les DLC et patchs"
+                       FontWeight="SemiBold"
+                       Foreground="#cdd6f4"
+                       Margin="0,0,0,4"/>
+            <ComboBox x:Name="CmbReplyExtras"
+                      Width="320" HorizontalAlignment="Left"
+                      Margin="0,0,0,4">
+                <ComboBoxItem Content="Fenêtre"/>
+                <ComboBoxItem Content="Notification et toast"/>
+            </ComboBox>
+            <TextBlock Text="Rien à installer, déjà installés, aucun DLC trouvé, blocages."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,12"/>
+
+            <TextBlock Text="Choisir la destination d'installation"
+                       FontWeight="SemiBold"
+                       Foreground="#cdd6f4"
+                       Margin="0,0,0,4"/>
+            <ComboBox x:Name="CmbReplyDestination"
+                      Width="320" HorizontalAlignment="Left"
+                      Margin="0,0,0,4">
+                <ComboBoxItem Content="Fenêtre"/>
+                <ComboBoxItem Content="Notification et toast"/>
+            </ComboBox>
+            <TextBlock Text="Destination mémorisée."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,12"/>
+
+            <TextBlock Text="Réassocier l'exécutable"
+                       FontWeight="SemiBold"
+                       Foreground="#cdd6f4"
+                       Margin="0,0,0,4"/>
+            <ComboBox x:Name="CmbReplyReassociate"
+                      Width="320" HorizontalAlignment="Left"
+                      Margin="0,0,0,4">
+                <ComboBoxItem Content="Fenêtre"/>
+                <ComboBoxItem Content="Notification et toast"/>
+            </ComboBox>
+            <TextBlock Text="Exécutable réassocié ou introuvable."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,12"/>
+
+            <TextBlock Text="Basculer le profil"
+                       FontWeight="SemiBold"
+                       Foreground="#cdd6f4"
+                       Margin="0,0,0,4"/>
+            <ComboBox x:Name="CmbReplyProfile"
+                      Width="320" HorizontalAlignment="Left"
+                      Margin="0,0,0,4">
+                <ComboBoxItem Content="Fenêtre"/>
+                <ComboBoxItem Content="Notification et toast"/>
+            </ComboBox>
+            <TextBlock Text="Profil activé."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,12"/>
+
             <!-- ============ SECTION : NOTIFICATIONS ============ -->
             <!-- Une case par catégorie (toutes cochées par défaut). Les ERREURS et blocages n'ont PAS de case :
                  elles s'affichent toujours (voir PluginSettings.IsNotificationAllowed). -->
@@ -353,7 +425,7 @@
                       FontWeight="SemiBold"
                       Foreground="#cdd6f4"
                       Margin="0,0,0,4"/>
-            <TextBlock Text="Confirme vos actions dans les menus : profil activé, destination mémorisée, exécutable réassocié."
+            <TextBlock Text="Confirme vos actions dans les menus : profil activé, destination mémorisée, exécutable réassocié. Seulement pour les actions réglées sur « Notification et toast » (section « Réponses à tes actions »)."
                        Foreground="#a6adc8" FontSize="12"
                        TextWrapping="Wrap"
                        Margin="22,0,0,0"/>

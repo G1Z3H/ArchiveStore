@@ -293,6 +293,22 @@ namespace ArchiveStore
         MenuConfirmations
     }
 
+    /// <summary>
+    /// « Réponses à tes actions » : les quatre actions de menu dont la réponse peut s'afficher en FENÊTRE (par défaut) ou en
+    /// notification et toast (voir ActionReply).
+    /// </summary>
+    public enum ReplyCategory
+    {
+        /// <summary>Menu du jeu « Installer les DLC et patchs » : rien à installer, déjà installés, blocages…</summary>
+        Extras,
+        /// <summary>Menu du jeu « Choisir la destination d'installation » : destination mémorisée.</summary>
+        Destination,
+        /// <summary>Menu du jeu « Réassocier l'exécutable » : exécutable réassocié (ou introuvable).</summary>
+        Reassociate,
+        /// <summary>Menu Extensions « Basculer le profil » : profil activé.</summary>
+        Profile
+    }
+
     // ======================================================================
     // PluginSettings — modèle persisté en JSON par Playnite.
     //
@@ -439,6 +455,45 @@ namespace ArchiveStore
 
         /// <summary>Afficher les confirmations des menus (profil activé, destination mémorisée, exécutable réassocié).</summary>
         public bool NotifyMenuConfirmations { get; set; } = true;
+
+        // ------------------------------------------------------------------
+        // RÉPONSES À TES ACTIONS (une par catégorie, voir ReplyCategory et ActionReply)
+        //
+        // Vrai (par défaut) = une FENÊTRE avec « OK » s'affiche devant toi. Faux = notification et toast, comme avant
+        // (les cases « Confirmations de menu » s'appliquent alors). Un ancien fichier de réglages n'a pas ces champs :
+        // la désérialisation garde la valeur par défaut ci-dessous (fenêtre).
+        // ------------------------------------------------------------------
+
+        /// <summary>« Installer les DLC et patchs » : réponse en fenêtre.</summary>
+        public bool ReplyWindowExtras { get; set; } = true;
+
+        /// <summary>« Choisir la destination d'installation » : réponse en fenêtre.</summary>
+        public bool ReplyWindowDestination { get; set; } = true;
+
+        /// <summary>« Réassocier l'exécutable » : réponse en fenêtre.</summary>
+        public bool ReplyWindowReassociate { get; set; } = true;
+
+        /// <summary>« Basculer le profil » : réponse en fenêtre.</summary>
+        public bool ReplyWindowProfile { get; set; } = true;
+
+        /// <summary>Vrai si la réponse de cette catégorie s'affiche en fenêtre.</summary>
+        public bool IsReplyWindow(ReplyCategory category)
+        {
+            switch (category)
+            {
+                case ReplyCategory.Extras: return ReplyWindowExtras;
+                case ReplyCategory.Destination: return ReplyWindowDestination;
+                case ReplyCategory.Reassociate: return ReplyWindowReassociate;
+                case ReplyCategory.Profile: return ReplyWindowProfile;
+                default: return true;
+            }
+        }
+
+        /// <summary>Vrai si au moins une catégorie répond en notification et toast (les cases « Confirmations de menu » servent alors).</summary>
+        public bool AnyReplyAsNotification()
+        {
+            return !ReplyWindowExtras || !ReplyWindowDestination || !ReplyWindowReassociate || !ReplyWindowProfile;
+        }
 
         // ------------------------------------------------------------------
         // TOASTS (petites cartes au premier plan, en plus des notifications — voir ToastHelper)
@@ -690,6 +745,10 @@ namespace ArchiveStore
                 NotifySummaries = _clone.NotifySummaries;
                 NotifyInstallInfo = _clone.NotifyInstallInfo;
                 NotifyMenuConfirmations = _clone.NotifyMenuConfirmations;
+                ReplyWindowExtras = _clone.ReplyWindowExtras;
+                ReplyWindowDestination = _clone.ReplyWindowDestination;
+                ReplyWindowReassociate = _clone.ReplyWindowReassociate;
+                ReplyWindowProfile = _clone.ReplyWindowProfile;
                 ToastNewExtras = _clone.ToastNewExtras;
                 ToastMissingPaths = _clone.ToastMissingPaths;
                 ToastDuplicates = _clone.ToastDuplicates;
@@ -1351,6 +1410,10 @@ namespace ArchiveStore
                 NotifySummaries = NotifySummaries,
                 NotifyInstallInfo = NotifyInstallInfo,
                 NotifyMenuConfirmations = NotifyMenuConfirmations,
+                ReplyWindowExtras = ReplyWindowExtras,
+                ReplyWindowDestination = ReplyWindowDestination,
+                ReplyWindowReassociate = ReplyWindowReassociate,
+                ReplyWindowProfile = ReplyWindowProfile,
                 ToastNewExtras = ToastNewExtras,
                 ToastMissingPaths = ToastMissingPaths,
                 ToastDuplicates = ToastDuplicates,

@@ -345,6 +345,22 @@ namespace ArchiveStore
         // ------------------------------------------------------------------
         private void BuildNotifications()
         {
+            // Réponses aux actions de menu : fenêtre (par défaut) ou notification et toast, une ligne par action.
+            AddText(ConsoleRows.Section(this, "RÉPONSES À TES ACTIONS"));
+            AddText(ConsoleRows.Note(this,
+                "Quand tu fais une action dans un menu, sa réponse (rien à installer, action impossible, choix enregistré…) " +
+                "s'affiche dans une fenêtre devant toi, ou en notification et toast, comme tu préfères. Ce qui arrive plus " +
+                "tard (installation terminée, nouveaux DLC…) reste toujours en notification."));
+            AddReply("Installer les DLC et patchs", "rien à installer, déjà installés, aucun DLC trouvé, blocages",
+                _s.ReplyWindowExtras, v => _s.ReplyWindowExtras = v);
+            AddReply("Choisir la destination d'installation", "destination mémorisée",
+                _s.ReplyWindowDestination, v => _s.ReplyWindowDestination = v);
+            AddReply("Réassocier l'exécutable", "exécutable réassocié ou introuvable",
+                _s.ReplyWindowReassociate, v => _s.ReplyWindowReassociate = v);
+            AddReply("Basculer le profil", "profil activé",
+                _s.ReplyWindowProfile, v => _s.ReplyWindowProfile = v);
+
+            AddText(ConsoleRows.Section(this, "NOTIFICATIONS"));
             AddText(ConsoleRows.Note(this,
                 "Choisissez les notifications que vous voulez voir. Les erreurs et les blocages (échec d'installation, " +
                 "espace insuffisant, exécutable introuvable…) s'affichent toujours : elles ne peuvent pas être désactivées."));
@@ -369,8 +385,31 @@ namespace ArchiveStore
                 "de secours utilisée, avancement d'une installation directe. L'avancement d'une copie, qui permet de " +
                 "l'annuler d'un clic, reste toujours affiché.");
 
+            // Grisée quand toutes les actions répondent en fenêtre : elle ne servirait à rien.
             AddCheck("Confirmations de menu", _s.NotifyMenuConfirmations, v => _s.NotifyMenuConfirmations = v,
-                "Confirme vos actions dans les menus : profil activé, destination mémorisée, exécutable réassocié.");
+                "Confirme vos actions dans les menus : profil activé, destination mémorisée, exécutable réassocié. " +
+                "Seulement pour les actions réglées sur « Notification et toast » (section « Réponses à tes actions »).",
+                _s.AnyReplyAsNotification());
+        }
+
+        // Une ligne « Réponses à tes actions » : affiche le choix actuel ; A ouvre le choix Fenêtre / Notification et toast.
+        private void AddReply(string action, string what, bool window, Action<bool> setter)
+        {
+            AddRow(ConsoleRows.Row(this, action, window ? "Fenêtre" : "Notification et toast", () =>
+            {
+                var choices = new List<MenuChoice>
+                {
+                    new MenuChoice("Fenêtre", "Une fenêtre avec « OK », devant toi.", true),
+                    new MenuChoice("Notification et toast", "Comme avant : la notification de Playnite et son toast.", false)
+                };
+                var choice = ConsoleDialogs.Choose(this, "Réponses à tes actions", action,
+                    "Comment afficher la réponse (" + what + ") ?", choices, window ? 0 : 1);
+                if (choice == null) return;
+
+                setter((bool)choice.Tag);
+                Touch();
+                Rebuild();
+            }));
         }
 
         // ------------------------------------------------------------------
@@ -394,7 +433,8 @@ namespace ArchiveStore
             AddCheck("Doublons entre sources", _s.ToastDuplicates, v => _s.ToastDuplicates = v, null, _s.NotifyDuplicates);
             AddCheck("Résumés de fin", _s.ToastSummaries, v => _s.ToastSummaries = v, null, _s.NotifySummaries);
             AddCheck("Infos pendant l'installation", _s.ToastInstallInfo, v => _s.ToastInstallInfo = v, null, _s.NotifyInstallInfo);
-            AddCheck("Confirmations de menu", _s.ToastMenuConfirmations, v => _s.ToastMenuConfirmations = v, null, _s.NotifyMenuConfirmations);
+            AddCheck("Confirmations de menu", _s.ToastMenuConfirmations, v => _s.ToastMenuConfirmations = v, null,
+                _s.NotifyMenuConfirmations && _s.AnyReplyAsNotification());
             AddCheck("Erreurs et blocages", _s.ToastErrors, v => _s.ToastErrors = v,
                 "Les erreurs restent toujours en notification : cette case ajoute seulement un toast.");
 

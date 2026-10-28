@@ -42,7 +42,7 @@ namespace ArchiveStore
                                                NotificationType type, string message, string hint = null)
         {
             if (settings == null || !settings.IsToastAllowed(baseId, type)) return;
-            Enqueue(api, settings, TitleFor(settings.GetNotificationCategory(baseId)), message, hint);
+            Enqueue(api, settings, TitleFor(settings.GetNotificationCategory(baseId)), message, hint, type == NotificationType.Error);
         }
 
         /// <summary>Toast d'une notification créée directement, si la case « toast » de sa catégorie est cochée.</summary>
@@ -57,7 +57,7 @@ namespace ArchiveStore
         public static void ShowError(IPlayniteAPI api, PluginSettings settings, string message)
         {
             if (settings == null || !settings.ToastErrors) return;
-            Enqueue(api, settings, TitleFor(null), message, null);
+            Enqueue(api, settings, TitleFor(null), message, null, true);
         }
 
         /// <summary>
@@ -104,13 +104,15 @@ namespace ArchiveStore
         // ------------------------------------------------------------------
         // Transmission à ToastService (boîte à outils partagée)
         // ------------------------------------------------------------------
-        private static void Enqueue(IPlayniteAPI api, PluginSettings settings, string title, string message, string hint)
+        private static void Enqueue(IPlayniteAPI api, PluginSettings settings, string title, string message, string hint, bool isError = false)
         {
             string cleanText = CleanMessage(message);
             if (cleanText.Length == 0) return;
 
             // Toujours empilés : pile commune des plugins Argent (durée et nombre réglés dans Argent, voir ToastService).
-            ToastService.Show(title, cleanText, hint, settings.ToastsDuringGame, ToastLayout.Stacked);
+            // Une erreur le dit à la pile : avec Argent, « Ne pas déranger » peut la laisser passer.
+            ToastService.ShowFrom(null, isError ? ToastService.KindError : ToastService.KindInfo, title, cleanText, hint,
+                                  settings.ToastsDuringGame);
         }
     }
 }
