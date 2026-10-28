@@ -88,6 +88,7 @@ namespace ArchiveStore
             // Cases à cocher : valeur initiale AVANT d'attacher les gestionnaires
             // (sinon l'affectation de IsChecked les déclencherait pour rien).
             ChkDirectInstall.IsChecked = _settings.DirectInstall;
+            CmbInstallScope.SelectedIndex = (int)_settings.InstallScope;
             ChkCleanNames.IsChecked = _settings.CleanGameNames;
             ChkConfirmExtras.IsChecked = _settings.ConfirmExtras;
             ChkWordsAnywhere.IsChecked = _settings.InstallerWordsAnywhere;
@@ -109,8 +110,6 @@ namespace ArchiveStore
             ChkToastMenu.IsChecked = _settings.ToastMenuConfirmations;
             ChkToastErrors.IsChecked = _settings.ToastErrors;
             ChkToastsDuringGame.IsChecked = _settings.ToastsDuringGame;
-            RbToastQueue.IsChecked = _settings.ToastMode != ToastStackMode.Stacked;
-            RbToastStack.IsChecked = _settings.ToastMode == ToastStackMode.Stacked;
 
             // Curseur « rythme de la progression » : valeur initiale AVANT d'attacher le gestionnaire.
             SldProgressInterval.Value = _settings.ProgressIntervalSeconds;
@@ -121,6 +120,11 @@ namespace ArchiveStore
 
             ChkDirectInstall.Checked += (s, e) => { _settings.DirectInstall = true; UpdateConfirmExtrasState(); };
             ChkDirectInstall.Unchecked += (s, e) => { _settings.DirectInstall = false; UpdateConfirmExtrasState(); };
+            CmbInstallScope.SelectionChanged += (s, e) =>
+            {
+                if (CmbInstallScope.SelectedIndex >= 0)
+                    _settings.InstallScope = (InstallScope)CmbInstallScope.SelectedIndex;
+            };
             ChkCleanNames.Checked += (s, e) => _settings.CleanGameNames = true;
             ChkCleanNames.Unchecked += (s, e) => _settings.CleanGameNames = false;
             ChkConfirmExtras.Checked += (s, e) => _settings.ConfirmExtras = true;
@@ -157,8 +161,6 @@ namespace ArchiveStore
             ChkToastErrors.Unchecked += (s, e) => _settings.ToastErrors = false;
             ChkToastsDuringGame.Checked += (s, e) => _settings.ToastsDuringGame = true;
             ChkToastsDuringGame.Unchecked += (s, e) => _settings.ToastsDuringGame = false;
-            RbToastQueue.Checked += (s, e) => _settings.ToastMode = ToastStackMode.OneAfterAnother;
-            RbToastStack.Checked += (s, e) => _settings.ToastMode = ToastStackMode.Stacked;
 
             // Une case « toast » n'a de sens que si la notification correspondante est cochée.
             UpdateToastStates();

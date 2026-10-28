@@ -89,8 +89,16 @@
                         Content="Annuler"
                         MinWidth="160"
                         Click="BtnCancel_Click"/>
+                <Button x:Name="BtnBackground"
+                        DockPanel.Dock="Right"
+                        Content="En arrière-plan"
+                        MinWidth="160"
+                        Margin="0,0,16,0"
+                        Visibility="Collapsed"
+                        Click="BtnBackground_Click"/>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <tk:PadHint Pad="B" Label="Annuler"/>
+                    <tk:PadHint x:Name="HintBackground" Pad="Y" Label="Arrière-plan" Margin="0,0,24,0" Visibility="Collapsed"/>
+                    <tk:PadHint x:Name="HintCancel" Pad="B" Label="Annuler"/>
                 </StackPanel>
             </DockPanel>
         </Border>

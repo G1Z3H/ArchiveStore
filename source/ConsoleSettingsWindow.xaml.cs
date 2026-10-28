@@ -404,32 +404,11 @@ namespace ArchiveStore
                 "manette. Décochée : un toast n'apparaît que si Playnite est au premier plan et qu'aucun jeu n'est en " +
                 "cours de lancement ou d'exécution.");
 
-            string modeText = _s.ToastMode == ToastStackMode.Stacked ? "Superposés" : "L'un après l'autre";
-            AddRow(ConsoleRows.Row(this, "Quand plusieurs toasts arrivent en même temps", modeText, ChooseToastMode));
-
             AddText(ConsoleRows.Section(this, "ESSAI"));
             AddRow(ConsoleRows.Row(this, "Afficher des toasts de test", null, () => ToastHelper.ShowTest(_api, _s)));
             AddText(ConsoleRows.Note(this,
-                "Montre trois toasts avec vos réglages actuels (« pendant une partie » et la disposition), sans tenir " +
+                "Montre trois toasts avec vos réglages actuels (« pendant une partie »), sans tenir " +
                 "compte des cases ci-dessus."));
-        }
-
-        private void ChooseToastMode()
-        {
-            var choices = new List<MenuChoice>
-            {
-                new MenuChoice("L'un après l'autre", "Le suivant apparaît quand le précédent a disparu.", ToastStackMode.OneAfterAnother),
-                new MenuChoice("Superposés", "Jusqu'à quatre à la fois, les uns au-dessus des autres.", ToastStackMode.Stacked)
-            };
-            int initial = _s.ToastMode == ToastStackMode.Stacked ? 1 : 0;
-
-            var choice = ConsoleDialogs.Choose(this, "Toasts", "Plusieurs toasts à la fois",
-                "Que faire quand plusieurs toasts arrivent en même temps ?", choices, initial);
-            if (choice == null) return;
-
-            _s.ToastMode = (ToastStackMode)choice.Tag;
-            Touch();
-            Rebuild();
         }
 
         // ------------------------------------------------------------------
@@ -504,6 +483,14 @@ namespace ArchiveStore
         // ------------------------------------------------------------------
         private void BuildSilent()
         {
+            AddText(ConsoleRows.Section(this, "PORTÉE D'INSTALLATION (INNO SETUP)"));
+            AddRow(ConsoleRows.Row(this, "Installer pour", DescribeScope(_s.InstallScope), ChooseScope));
+            AddText(ConsoleRows.Note(this,
+                "« Utilisateur actuel » évite la demande UAC. « Tous les utilisateurs » peut la déclencher. " +
+                "« Demander à chaque installation » pose la question avant chaque jeu (sans effet en installation directe : " +
+                "l'installeur fait alors ce que son script prévoit). Un installeur sans ce choix ignore ce réglage."));
+
+            AddText(ConsoleRows.Section(this, "ARGUMENTS"));
             AddText(ConsoleRows.Note(this,
                 "Arguments donnés aux installeurs reconnus pour qu'ils s'installent sans afficher leur assistant. " +
                 "Ils ne peuvent pas être vides."));
@@ -518,6 +505,34 @@ namespace ArchiveStore
 
             AddRow(ConsoleRows.Row(this, "MSI", a.MsiArgs, () => EditSilent("MSI", a.MsiArgs, v => a.MsiArgs = v)));
             AddText(ConsoleRows.Note(this, "Ex. /qn /norestart — appliqué via msiexec."));
+        }
+
+        private static string DescribeScope(InstallScope scope)
+        {
+            switch (scope)
+            {
+                case InstallScope.CurrentUser: return "Toujours utilisateur actuel";
+                case InstallScope.AllUsers: return "Toujours tous les utilisateurs";
+                default: return "Demander à chaque installation";
+            }
+        }
+
+        private void ChooseScope()
+        {
+            var choices = new List<MenuChoice>
+            {
+                new MenuChoice("Demander à chaque installation", "Une question avant chaque jeu.", InstallScope.Ask),
+                new MenuChoice("Toujours utilisateur actuel", "Pas de demande UAC.", InstallScope.CurrentUser),
+                new MenuChoice("Toujours tous les utilisateurs", "L'UAC peut s'afficher.", InstallScope.AllUsers)
+            };
+            int initial = (int)_s.InstallScope;
+            var choice = ConsoleDialogs.Choose(this, "Portée d'installation", "Installer pour",
+                "Pour les installeurs Inno Setup qui proposent le choix.", choices, initial);
+            if (choice == null) return;
+
+            _s.InstallScope = (InstallScope)choice.Tag;
+            Touch();
+            Rebuild();
         }
 
         private void EditSilent(string kind, string current, Action<string> setter)

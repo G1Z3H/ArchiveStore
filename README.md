@@ -4,7 +4,9 @@
 
 ArchiveStore est une extension de bibliothèque pour Playnite. Elle transforme un simple dossier de jeux (un sous-dossier par jeu) en une vraie bibliothèque : les jeux apparaissent dans Playnite avec leur jaquette, leur taille, et les boutons natifs de Playnite, comme sur Steam ou Epic.
 
-Version actuelle : **0.0.7** (développement actif, retours bienvenus).
+Version actuelle : **1.0.1**.
+
+> **Nouveau en 1.0.1 :** les toasts rejoignent la pile commune des plugins Argent (boîte à outils ArgentToolkit) : ils s'empilent toujours, le plus ancien en haut. Le réglage « Quand plusieurs toasts arrivent en même temps » (l'un après l'autre / superposés) est retiré : il ne servait plus. Durée et nombre de toasts se règlent dans Argent (Personnalisation > Notifications). Un ancien fichier de réglages reste lisible.
 
 > **Nouveau en 0.0.7 :** les fenêtres « console » viennent de la boîte à outils partagée **ArgentToolkit** (dossier voisin `..\ArgentToolkit`, nécessaire à la compilation). Avec le thème Argent, un gros thème en préparationq qui arrive prochainement, elles prennent ses couleurs ; avec les autres thèmes, rien ne change. Sinon pas de changement sur les fonctinnalités par rapport à 0.0.6.
 
@@ -167,7 +169,7 @@ Un **toast** est une petite carte qui s'affiche en bas à droite de l'écran, au
 - Groupe « Toasts » des réglages, **tout coché par défaut** : une case par catégorie de notification (les six ci-dessus) et une case **« Erreurs et blocages »** (les erreurs restent toujours en notification ; la case ajoute seulement un toast).
 - Un toast n'apparaît que si la **notification correspondante est cochée** : la case toast est grisée sinon.
 - **« Y compris pendant une partie »** (cochée par défaut) : décochée, un toast n'apparaît que si Playnite est au premier plan et qu'aucun jeu n'est en cours de lancement ou d'exécution.
-- **Plusieurs toasts à la fois** : « L'un après l'autre » (par défaut : le suivant apparaît quand le précédent a disparu) ou « Superposés » (jusqu'à quatre à la fois, empilés). La file d'attente est limitée ; en cas d'inondation, les toasts en trop sont abandonnés, mais la notification existe toujours.
+- **Plusieurs toasts à la fois** : ils s'empilent dans la pile commune des plugins Argent (le plus ancien en haut). Pile pleine : le plus ancien s'efface pour laisser la place ; la notification existe toujours. Durée (3 à 10 s, 5 s) et nombre (1 à 10, 7) : Personnalisation d'Argent > Notifications (toasts).
 - Les messages longs sont raccourcis dans le toast ; le texte complet est dans la notification. L'avancement d'une copie et les messages secondaires sans catégorie ne font pas de toast.
 - Le bouton **« Afficher des toasts de test »** montre trois toasts avec vos réglages actuels.
 
@@ -181,10 +183,21 @@ Un **toast** est une petite carte qui s'affiche en bas à droite de l'écran, au
 - **Installeurs non reconnus (cas ambigu)** : mots supplémentaires (un par ligne) et case « n'importe où dans le nom du fichier ». Ces mots ne servent qu'à déclencher la question du cas ambigu. Ils sont distincts de la liste d'exclusions, qui cache des fichiers : si un jeu portable contient un `setup.exe` qui n'est qu'un outil de réglages, ajoutez son nom aux exclusions.
 - Cases à cocher : **Installation directe**, **Nettoyer les noms de jeux**, **Demander confirmation avant d'installer les DLC et patchs** (grisée quand « Installation directe » est cochée).
 - Groupe **Notifications** : six cases (voir plus haut).
-- Groupe **Toasts** : sept cases, « Y compris pendant une partie », la disposition (l'un après l'autre ou superposés) et un bouton de test (voir plus haut).
+- Groupe **Toasts** : sept cases, « Y compris pendant une partie » et un bouton de test (voir plus haut).
 - Rythme de mise à jour de la progression (2 à 10 secondes).
 - Bouton **Ouvrir le journal**.
 - Tous ces réglages sont aussi accessibles à la manette par le menu `Extensions` > « ArchiveStore — Réglages » (voir « Interface console et manette »).
+
+### Compatible Argent (0.1.0)
+
+Avec le thème Playnite **Argent** (et son extension Argent Core 0.13.0 ou plus), en mode Plein écran :
+
+- les réglages d'ArchiveStore sont dans **Personnalisation → Compatibles Argent → ArchiveStore**, au style d'Argent
+  (mêmes 9 catégories, chaque changement est enregistré tout de suite ; un profil n'est enregistré que s'il est valide) ;
+- l'entrée « ArchiveStore — Réglages » du menu Extensions n'apparaît pas (inutile) ;
+- toutes les fenêtres d'ArchiveStore (installation, progression, DLC et patchs, dossiers…) prennent le design d'Argent.
+
+Sans Argent (mode Bureau, autre thème, Playnite de base), rien ne change.
 
 ---
 
@@ -259,13 +272,19 @@ Ce qui suit est une liste d'**intentions**, sans engagement de date ni d'ordre.
 
 ---
 
+## Installer en arrière-plan
+
+Pendant une installation avec fenêtre (jeu, copie, DLC et patchs), la touche **Y** (ou le bouton « En arrière-plan ») masque la fenêtre : l'installation continue, vous pouvez naviguer dans Playnite, et le suivi passe par les notifications (avancement, puis message de fin ou d'erreur). Le choix vaut pour toute l'installation du jeu, DLC et patchs compris. La fenêtre masquée ne peut pas être rouverte. Pour une copie, un clic sur la notification d'avancement permet toujours de l'annuler.
+
+---
+
 ## Limites connues
 
 - La **bascule de profil** est dans le menu principal de Playnite, qui n'existe qu'en **mode Bureau** : c'est une limite de Playnite. Les menus d'un jeu (réassociation d'exécutable, choix de la destination, DLC et patchs après coup) sont disponibles dans les deux modes ; en mode Plein écran, ils se trouvent sous le jeu, dans `Extensions`.
 - Un installeur **non reconnu** ouvre sa propre fenêtre, que la manette ne sait pas piloter : en mode Plein écran, gardez un clavier et une souris à portée de main.
 - La notification des **nouveaux DLC et patchs** reconnaît un fichier à son **chemin** dans le dossier du jeu : un patch remplacé par une version plus récente portant le même nom n'est pas signalé. Les jeux installés à la main (cas ambigu) et les jeux portables ne sont pas surveillés.
 - Les jaquettes sont téléchargées par Playnite avec ses propres sources ; l'extension ne peut pas le forcer. Elle améliore seulement le nom envoyé et accepte vos images locales.
-- Les installeurs exigeant les droits administrateur ne peuvent pas être silencieux. Pour Inno Setup, utilisez `PrivilegesRequired=lowest` dans votre script.
+- Les installeurs exigeant les droits administrateur ne peuvent pas être silencieux. Pour Inno Setup, utilisez `PrivilegesRequired=lowest` dans votre script, ou, si votre script propose le choix (`PrivilegesRequiredOverridesAllowed=commandline` ou `dialog`), réglez **Portée d'installation** sur « Toujours utilisateur actuel » : l'extension ajoute `/CURRENTUSER` et l'UAC n'apparaît plus. Avec « Demander à chaque installation » (par défaut), la question est posée avant chaque jeu ; en installation directe, l'installeur est lancé sans option. Un installeur sans ce choix ignore le réglage.
 - Un installeur **non reconnu** est lancé avec sa propre fenêtre et ne peut pas être forcé vers le bon dossier : c'est à vous de choisir exactement le dossier indiqué par le plugin. Le plugin ne peut pas savoir à lui seul que l'installation est terminée, c'est pourquoi il vous pose la question.
 - Les DLC et patchs doivent être rangés dans des sous-dossiers directs du jeu dont le nom commence par `__` (voir plus haut). Un dossier `DLC` ou `Patch` sans les deux underscores n'est pas reconnu, et un installeur de DLC qui s'y trouverait pourrait être pris pour l'installeur du jeu.
 - Un jeu installé avant la 0.0.3 n'a pas de mémoire de ses DLC et patchs : le plugin les reproposera, et le bouton « Déjà installés » permet de les noter sans rien réinstaller. Tant que cette mémoire n'existe pas, le jeu n'est pas surveillé pour les nouveaux DLC et patchs.

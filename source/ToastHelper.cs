@@ -21,7 +21,7 @@ namespace ArchiveStore
     //   • ShowError           : erreurs et blocages ;
     //   • ShowTest            : bouton « Afficher des toasts de test » des réglages.
     //
-    // L'AFFICHAGE (carte en bas à droite, file d'attente, empilement, règle « pendant une partie ») est fait
+    // L'AFFICHAGE (carte en bas à droite, pile commune, règle « pendant une partie ») est fait
     // par ToastService, dans la boîte à outils partagée ArgentToolkit. Ici, on garde ce qui est propre à
     // ArchiveStore : les cases par catégorie, les titres, le nettoyage du texte et les réglages.
     // ======================================================================
@@ -109,11 +109,8 @@ namespace ArchiveStore
             string cleanText = CleanMessage(message);
             if (cleanText.Length == 0) return;
 
-            ToastLayout layout = settings.ToastMode == ToastStackMode.Stacked
-                ? ToastLayout.Stacked
-                : ToastLayout.OneAfterAnother;
-
-            ToastService.Show(title, cleanText, hint, settings.ToastsDuringGame, layout);
+            // Toujours empilés : pile commune des plugins Argent (durée et nombre réglés dans Argent, voir ToastService).
+            ToastService.Show(title, cleanText, hint, settings.ToastsDuringGame, ToastLayout.Stacked);
         }
     }
 }

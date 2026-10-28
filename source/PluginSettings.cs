@@ -220,6 +220,16 @@ namespace ArchiveStore
     }
 
     // ======================================================================
+    // InstallScope — pour qui installer les jeux (installeurs Inno Setup).
+    //   Ask         : on demande à chaque installation (comportement par défaut).
+    //   CurrentUser : toujours « utilisateur actuel » (/CURRENTUSER) : pas de demande UAC.
+    //   AllUsers    : toujours « tous les utilisateurs » (/ALLUSERS) : l'UAC peut apparaître.
+    // Un installeur Inno sans choix possible (script sans PrivilegesRequiredOverridesAllowed)
+    // ignore simplement ces options et fait ce que son script prévoit.
+    // ======================================================================
+    public enum InstallScope { Ask = 0, CurrentUser = 1, AllUsers = 2 }
+
+    // ======================================================================
     // SilentArgs — arguments d'installation silencieuse par type d'installeur.
     // Valeurs par défaut = standards industriels. L'utilisateur peut les
     // personnaliser dans l'UI.
@@ -258,17 +268,6 @@ namespace ArchiveStore
         public long FolderTicks { get; set; }
     }
 
-    // ======================================================================
-    // ToastStackMode — que faire quand plusieurs toasts arrivent en même temps (voir ToastHelper).
-    // La valeur 0 est celle par défaut d'un ancien fichier de réglages : « L'un après l'autre ».
-    // ======================================================================
-    public enum ToastStackMode
-    {
-        /// <summary>Un seul toast visible à la fois ; les autres attendent leur tour (file d'attente).</summary>
-        OneAfterAnother = 0,
-        /// <summary>Plusieurs toasts visibles, empilés les uns au-dessus des autres.</summary>
-        Stacked = 1
-    }
 
     // ======================================================================
     // NotifyCategory — les six catégories de notifications que l'utilisateur peut désactiver
@@ -366,6 +365,9 @@ namespace ArchiveStore
         /// (Valeur par défaut simple : pas le piège des collections, voir CreateDefault.)
         /// </summary>
         public bool DirectInstall { get; set; } = true;
+
+        /// <summary>Pour qui installer les jeux Inno Setup (voir InstallScope).</summary>
+        public InstallScope InstallScope { get; set; } = InstallScope.Ask;
 
         /// <summary>
         /// Vrai (par défaut) = le nom affiché est « nettoyé » pour aider Playnite à
@@ -475,9 +477,6 @@ namespace ArchiveStore
         /// Faux : seulement si Playnite est au premier plan et qu'aucun jeu n'est en cours de lancement ou d'exécution.
         /// </summary>
         public bool ToastsDuringGame { get; set; } = true;
-
-        /// <summary>Disposition quand plusieurs toasts arrivent ensemble (défaut : l'un après l'autre).</summary>
-        public ToastStackMode ToastMode { get; set; } = ToastStackMode.OneAfterAnother;
 
         /// <summary>
         /// Cache des tailles de jeux (clé = nom du dossier). Remplacé en entier à
@@ -679,6 +678,7 @@ namespace ArchiveStore
                 ExcludedExePatterns = _clone.ExcludedExePatterns;
                 SaveFolderNames = _clone.SaveFolderNames;
                 DirectInstall = _clone.DirectInstall;
+                InstallScope = _clone.InstallScope;
                 CleanGameNames = _clone.CleanGameNames;
                 ConfirmExtras = _clone.ConfirmExtras;
                 ProgressIntervalSeconds = _clone.ProgressIntervalSeconds;
@@ -698,7 +698,6 @@ namespace ArchiveStore
                 ToastMenuConfirmations = _clone.ToastMenuConfirmations;
                 ToastErrors = _clone.ToastErrors;
                 ToastsDuringGame = _clone.ToastsDuringGame;
-                ToastMode = _clone.ToastMode;
                 _clone = null;
             }
         }
@@ -1340,6 +1339,7 @@ namespace ArchiveStore
                 ExcludedExePatterns = new List<string>(ExcludedExePatterns ?? new List<string>()),
                 SaveFolderNames = new List<string>(SaveFolderNames ?? new List<string>()),
                 DirectInstall = DirectInstall,
+                InstallScope = InstallScope,
                 CleanGameNames = CleanGameNames,
                 ConfirmExtras = ConfirmExtras,
                 ProgressIntervalSeconds = ProgressIntervalSeconds,
@@ -1358,8 +1358,7 @@ namespace ArchiveStore
                 ToastInstallInfo = ToastInstallInfo,
                 ToastMenuConfirmations = ToastMenuConfirmations,
                 ToastErrors = ToastErrors,
-                ToastsDuringGame = ToastsDuringGame,
-                ToastMode = ToastMode
+                ToastsDuringGame = ToastsDuringGame
             };
         }
 

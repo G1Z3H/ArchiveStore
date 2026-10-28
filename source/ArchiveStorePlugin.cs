@@ -39,6 +39,65 @@ namespace ArchiveStore
     }
 
     // ======================================================================
+    // InstalledSizeHelper — la taille d'un jeu INSTALLÉ.
+    //
+    // Playnite affiche "Taille d'installation" (InstallSize). Tant qu'un jeu n'est pas installé, on y met la taille de son
+    // dossier source (l'installeur). Une fois installé, la vraie taille est celle du dossier installé, qui peut être plus
+    // petite ou plus grande que l'installeur : on la mesure donc à la fin de l'installation (et d'un ajout de DLC / patch),
+    // et le calcul en arrière-plan ne remet plus la taille de l'installeur sur un jeu installé.
+    // ======================================================================
+    internal static class InstalledSizeHelper
+    {
+        private static readonly HashSet<string> Done = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly object Gate = new object();
+
+        /// <summary>Vrai si la taille installée de ce jeu a déjà été mesurée pendant cette session de Playnite.</summary>
+        public static bool IsDone(string gameId)
+        {
+            if (string.IsNullOrEmpty(gameId)) return false;
+            lock (Gate) return Done.Contains(gameId);
+        }
+
+        public static void MarkDone(string gameId)
+        {
+            if (string.IsNullOrEmpty(gameId)) return;
+            lock (Gate) Done.Add(gameId);
+        }
+
+        /// <summary>Le jeu n'est plus installé : au prochain mesure, on repart de zéro.</summary>
+        public static void Forget(string gameId)
+        {
+            if (string.IsNullOrEmpty(gameId)) return;
+            lock (Gate) Done.Remove(gameId);
+        }
+
+        /// <summary>Mesure le dossier installé (à appeler hors du thread UI) puis écrit la taille dans Playnite. Ne lève jamais d'exception.</summary>
+        public static void Refresh(IPlayniteAPI api, Guid databaseId, string gameId, string installDir)
+        {
+            try
+            {
+                if (api == null || string.IsNullOrEmpty(installDir) || !Directory.Exists(installDir)) return;
+                long bytes = ArchiveScanner.GetDirectorySize(installDir);
+                MarkDone(gameId);
+                if (bytes <= 0) return;
+
+                ulong size = (ulong)bytes;
+                UiHelper.OnUi(() =>
+                {
+                    var game = api.Database.Games.Get(databaseId);
+                    if (game == null || game.InstallSize == size) return;
+                    game.InstallSize = size;
+                    api.Database.Games.Update(game);
+                });
+            }
+            catch (Exception ex)
+            {
+                LogManager.GetLogger().Warn(ex, "ArchiveStore : taille du jeu installé non mise à jour.");
+            }
+        }
+    }
+
+    // ======================================================================
     // GameActionHelper — création / mise à jour de l'action "Jouer".
     //
     // ⚠️ IsPlayAction = true est INDISPENSABLE : sans lui, Playnite considère
@@ -260,6 +319,9 @@ namespace ArchiveStore
             // notre journal. Les fenêtres « console » (InstallDialog, ProgressWindow…) reçoivent les boutons de la
             // manette par l'intermédiaire de GamepadHelper (voir ArgentToolkit\src\ConsoleWindow.cs).
             Toolkit.Initialize(api, ArchiveLog.Info, ArchiveLog.Warn);
+
+            // COMPATIBLES ARGENT : avec le thème Argent, nos réglages sont dans sa fenêtre Personnalisation (voir ArgentSettings.cs).
+            new ArgentSettings(_settings, api, PluginGuid).Register();
         }
 
         // ------------------------------------------------------------------
@@ -585,12 +647,23 @@ namespace ArchiveStore
             // (identifiants + taille actuelle) puis on travaille hors UI.
             var games = UiHelper.OnUi(() => _api.Database.Games
                 .Where(g => g.PluginId == Id && !string.IsNullOrEmpty(g.GameId))
-                .Select(g => new { g.Id, g.GameId, g.InstallSize })
+                .Select(g => new { g.Id, g.GameId, g.InstallSize, g.IsInstalled, g.InstallDirectory })
                 .ToList());
 
             int computed = 0;
             foreach (var g in games)
             {
+                // JEU INSTALLÉ : la taille est celle du dossier INSTALLÉ (pas celle de l'installeur). Mesurée une fois par
+                // session de Playnite (et à la fin de chaque installation) : c'est ce qui corrige aussi les jeux déjà installés.
+                bool installed = g.IsInstalled && !string.IsNullOrEmpty(g.InstallDirectory) && Directory.Exists(g.InstallDirectory);
+                if (installed)
+                {
+                    if (InstalledSizeHelper.IsDone(g.GameId)) continue;
+                    InstalledSizeHelper.Refresh(_api, g.Id, g.GameId, g.InstallDirectory);
+                    continue;
+                }
+                InstalledSizeHelper.Forget(g.GameId);
+
                 var dir = ArchiveScanner.FindGameSourceDir(sourceRoots, g.GameId);
                 if (dir == null) continue; // jeu absent, ou source débranchée : on ne touche à rien
 
@@ -616,6 +689,7 @@ namespace ArchiveStore
                 {
                     var game = _api.Database.Games.Get(gameId);
                     if (game == null) return;
+                    if (game.IsInstalled) return; // installé entre-temps : sa vraie taille est celle du dossier installé
                     game.InstallSize = size;
                     _api.Database.Games.Update(game);
                 });
@@ -1087,12 +1161,16 @@ namespace ArchiveStore
         {
             // Réglages « manette » : une entrée directement sous « Extensions » (MenuSection "@"), en mode Bureau
             // comme en mode Plein écran. L'écran de réglages classique (mode Bureau) reste disponible.
-            yield return new MainMenuItem
+            // Avec le thème Argent (Compatibles Argent) : pas d'entrée, les réglages sont dans Personnalisation d'Argent.
+            if (!ArgentBridge.IsHosted(_api))
             {
-                Description = "ArchiveStore — Réglages",
-                MenuSection = "@",
-                Action = _ => OpenConsoleSettings()
-            };
+                yield return new MainMenuItem
+                {
+                    Description = "ArchiveStore — Réglages",
+                    MenuSection = "@",
+                    Action = _ => OpenConsoleSettings()
+                };
+            }
 
             const string section = "Library|ArchiveStore";
             if (_settings.Profiles != null && _settings.Profiles.Count > 1)
@@ -1787,6 +1865,15 @@ namespace ArchiveStore
                         new GameInstallationData { InstallDirectory = destDir }));
                 });
 
+                // La taille affichée par Playnite devient celle du jeu INSTALLÉ (et non celle de l'installeur) : mesurée en
+                // arrière-plan pour ne pas retarder la fin de l'installation.
+                {
+                    var sizeDbId = Game.Id;
+                    var sizeGameId = Game.GameId;
+                    var sizeDir = destDir;
+                    Task.Run(() => InstalledSizeHelper.Refresh(_api, sizeDbId, sizeGameId, sizeDir));
+                }
+
                 string doneText = useAsIs
                     ? $"'{Game.Name}' : le dossier existant a été utilisé tel quel (rien n'a été copié ni supprimé)."
                     : $"'{Game.Name}' installé avec succès.{extrasSummary}";
@@ -1951,7 +2038,10 @@ namespace ArchiveStore
             {
                 case InstallerType.InnoSetup:
                     file = scan.DetectedInstallerPath;
-                    arguments = $"{a.InnoArgs} /DIR=\"{destDir}\"";
+                    bool scopeCancelled;
+                    string scopeArg = ResolveInnoScopeArg(interactive, out scopeCancelled);
+                    if (scopeCancelled) return StepResult.Cancelled;
+                    arguments = $"{a.InnoArgs}{scopeArg} /DIR=\"{destDir}\"";
                     break;
                 case InstallerType.Nullsoft:
                     file = scan.DetectedInstallerPath;
@@ -1990,7 +2080,7 @@ namespace ArchiveStore
 
             ProgressWindow win = null;
             if (interactive)
-                win = OpenProgress(0, "Installation en cours…", "Exécution de l'installeur silencieux…", false, null);
+                win = OpenProgress(0, "Installation en cours…", "Exécution de l'installeur silencieux…", false, null, false, true);
             else
                 ShowProgress($"Installation de '{Game.Name}' en cours…", null);
 
@@ -2173,7 +2263,7 @@ namespace ArchiveStore
 
                         string elapsed = DescribeDuration(chrono.Elapsed);
 
-                        if (win != null)
+                        if (win != null && !win.InBackground)
                         {
                             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
                                 win.SetInstallProgress(written, expectedTotal, "Temps écoulé : " + elapsed)));
@@ -2265,7 +2355,7 @@ namespace ArchiveStore
             ProgressWindow win = null;
 
             if (interactive)
-                win = OpenProgress(total, "Copie en cours…", "Préparation…", true, () => cts.Cancel(), _destinationExisting);
+                win = OpenProgress(total, "Copie en cours…", "Préparation…", true, () => cts.Cancel(), _destinationExisting, true);
             else
                 ShowProgress($"Copie de '{Game.Name}'… 0 % (cliquer ici pour annuler)", () => AskCancel(cts));
 
@@ -2279,7 +2369,7 @@ namespace ArchiveStore
                 // vers le thread UI via BeginInvoke (asynchrone → la copie n'attend pas l'écran).
                 var progress = new InlineProgress<CopyProgress>(p =>
                 {
-                    if (win != null)
+                    if (win != null && !win.InBackground)
                     {
                         Application.Current.Dispatcher.BeginInvoke(new Action(() =>
                             win.UpdateProgress(p.CurrentFile, p.TotalBytesCopied)));
@@ -2355,17 +2445,35 @@ namespace ArchiveStore
         // Outils
         // ------------------------------------------------------------------
         // keepFilesOnCancel : dossier préexistant (« Écraser ») → les textes d'annulation précisent que rien n'est supprimé.
+        // allowBackground : la touche Y masque la fenêtre (installation / copie / extras) ; l'installation continue
+        // et le suivi passe par les notifications. Le choix vaut pour toute l'installation du jeu.
+        private volatile bool _backgroundRequested;
+
         private ProgressWindow OpenProgress(long total, string title, string status, bool allowCancel, Action onCancel,
-                                            bool keepFilesOnCancel = false)
+                                            bool keepFilesOnCancel = false, bool allowBackground = false)
         {
             return UiHelper.OnUi<ProgressWindow>(() =>
             {
-                var w = new ProgressWindow(total, title, allowCancel)
+                var w = new ProgressWindow(total, title, allowCancel, allowBackground)
                 { Owner = _api.Dialogs.GetCurrentAppWindow() };
                 if (keepFilesOnCancel) w.KeepFilesOnCancel();
                 w.SetStatus(status);
                 if (onCancel != null)
                     w.CancelRequested += (s, e) => onCancel();
+                if (allowBackground)
+                {
+                    w.BackgroundRequested += (s, e) =>
+                    {
+                        _backgroundRequested = true;
+                        ArchiveLog.Info($"Installation de '{Game.Name}' : poursuite en arrière-plan demandée (touche Y).");
+                        ShowProgress($"Installation de '{Game.Name}' en arrière-plan…", null);
+                    };
+                    if (_backgroundRequested)
+                    {
+                        w.StartInBackground(); // jamais affichée
+                        return w;
+                    }
+                }
                 w.Show();
                 return w;
             });

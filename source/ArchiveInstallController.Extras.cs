@@ -356,7 +356,7 @@ namespace ArchiveStore
                 long expectedExtras = _settings.GetInstalledSize(sizeKey) ?? 0;
 
                 if (interactive)
-                    win = OpenProgress(0, "Installation des DLC et patchs…", "Préparation…", false, null);
+                    win = OpenProgress(0, "Installation des DLC et patchs…", "Préparation…", false, null, false, true);
 
                 long baseline = ArchiveScanner.GetDirectorySize(destDir);
                 monitorCts = new CancellationTokenSource();
@@ -382,7 +382,7 @@ namespace ArchiveStore
                     // Étape en cours : lue par le suivi pour les notifications (mode sans fenêtre).
                     _stepLabel = $"{label} {i + 1} sur {list.Count}";
 
-                    if (win != null)
+                    if (win != null && !win.InBackground)
                     {
                         SetProgressStatus(win, extra.IsManual
                             ? $"{_stepLabel} : {fileName} — une fenêtre d'installation s'ouvre, suivez ses instructions"
@@ -405,7 +405,7 @@ namespace ArchiveStore
                         ? RunCopyExtra(extra, destDir, out error)
                         : extra.IsManual
                             ? RunManualExtra(extra, interactive, out error)
-                            : RunExtraInstaller(extra, destDir, out error);
+                            : RunExtraInstaller(extra, destDir, interactive, out error);
                     if (!launched)
                     {
                         var notRun = list.Skip(i + 1).Select(x => Path.GetFileName(x.Path)).ToList();
@@ -646,10 +646,60 @@ namespace ArchiveStore
             }
         }
 
+        // ------------------------------------------------------------------
+        // PORTÉE D'INSTALLATION (Inno Setup) : « utilisateur actuel » ou « tous les utilisateurs ».
+        // Selon le réglage : option fixe (/CURRENTUSER ou /ALLUSERS), ou question posée UNE SEULE fois par
+        // installation (le jeu de base et ses extras partagent la réponse). Sans fenêtre (installation
+        // directe) et réglage « demander » : aucune option, l'installeur fait ce que son script prévoit.
+        // Renvoie le texte à ajouter aux arguments (avec espace devant, ou vide).
+        // ------------------------------------------------------------------
+        private string _innoScopeArg; // null = pas encore décidé
+
+        private string ResolveInnoScopeArg(bool interactive, out bool cancelled)
+        {
+            cancelled = false;
+            if (_innoScopeArg != null) return _innoScopeArg;
+
+            switch (_settings.InstallScope)
+            {
+                case InstallScope.CurrentUser:
+                    _innoScopeArg = " /CURRENTUSER";
+                    break;
+                case InstallScope.AllUsers:
+                    _innoScopeArg = " /ALLUSERS";
+                    break;
+                default:
+                    if (!interactive)
+                    {
+                        _innoScopeArg = "";
+                        break;
+                    }
+                    var choices = new List<MenuChoice>
+                    {
+                        new MenuChoice("Utilisateur actuel", "Sans demande UAC (droits administrateur).", " /CURRENTUSER"),
+                        new MenuChoice("Tous les utilisateurs", "L'UAC peut s'afficher.", " /ALLUSERS")
+                    };
+                    var choice = UiHelper.OnUi<MenuChoice>(() =>
+                        ConsoleDialogs.Choose(null, "Installation", "Pour qui installer ce jeu ?",
+                            "« " + Game.Name + " » : installer pour l'utilisateur actuel seulement, ou pour tous les utilisateurs ?",
+                            choices, 0));
+                    if (choice == null)
+                    {
+                        cancelled = true;
+                        ArchiveLog.Info($"Installation de '{Game.Name}' : choix « pour qui installer » annulé par l'utilisateur.");
+                        return "";
+                    }
+                    _innoScopeArg = (string)choice.Tag;
+                    break;
+            }
+            ArchiveLog.Info($"Portée d'installation Inno Setup : '{(_innoScopeArg.Length == 0 ? "(aucune option)" : _innoScopeArg.Trim())}'.");
+            return _innoScopeArg;
+        }
+
         // Lance UN installeur d'extra en silencieux et attend sa fin.
         // Retourne true si le code de retour est 0 (ou 3010 = succès MSI, redémarrage conseillé).
         // Sinon false, avec une explication dans "error". Ne lève pas d'exception.
-        private bool RunExtraInstaller(ExtraInstaller extra, string destDir, out string error)
+        private bool RunExtraInstaller(ExtraInstaller extra, string destDir, bool interactive, out string error)
         {
             error = null;
             var a = _settings.SilentArguments ?? new SilentArgs();
@@ -660,7 +710,14 @@ namespace ArchiveStore
             {
                 case InstallerType.InnoSetup:
                     file = extra.Path;
-                    arguments = $"{a.InnoArgs} /DIR=\"{destDir}\"";
+                    bool scopeCancelled;
+                    string scopeArg = ResolveInnoScopeArg(interactive, out scopeCancelled);
+                    if (scopeCancelled)
+                    {
+                        error = "choix « pour qui installer » annulé";
+                        return false;
+                    }
+                    arguments = $"{a.InnoArgs}{scopeArg} /DIR=\"{destDir}\"";
                     break;
                 case InstallerType.Nullsoft:
                     file = extra.Path;
@@ -1010,6 +1067,15 @@ namespace ArchiveStore
 
                 // --- Installation ---
                 string summary = ProcessExtras(plan, destDir, interactive);
+
+                // Des DLC / patchs ont changé la taille du jeu installé : on la remet à jour dans Playnite.
+                {
+                    var sizeDbId = Game.Id;
+                    var sizeGameId = Game.GameId;
+                    var sizeDir = destDir;
+                    Task.Run(() => InstalledSizeHelper.Refresh(_api, sizeDbId, sizeGameId, sizeDir));
+                }
+
                 ArchiveLog.Info($"Menu DLC et patchs de '{Game.Name}' terminé :{summary}");
                 Notify("ArchiveStore_ExtrasMenuDone", $"'{Game.Name}' :{summary}", NotificationType.Info);
             }

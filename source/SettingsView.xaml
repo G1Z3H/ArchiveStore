@@ -239,6 +239,21 @@
                        TextWrapping="Wrap"
                        Margin="22,0,0,12"/>
 
+            <TextBlock Text="Installer les jeux Inno Setup pour :"
+                       Foreground="#cdd6f4"
+                       Margin="0,0,0,4"/>
+            <ComboBox x:Name="CmbInstallScope"
+                      Width="320" HorizontalAlignment="Left"
+                      Margin="0,0,0,6">
+                <ComboBoxItem Content="Demander à chaque installation"/>
+                <ComboBoxItem Content="Toujours utilisateur actuel (sans UAC)"/>
+                <ComboBoxItem Content="Toujours tous les utilisateurs"/>
+            </ComboBox>
+            <TextBlock Text="Un installeur sans ce choix ignore ce réglage. Sans fenêtre (installation directe), « Demander » lance l'installeur sans option."
+                       Foreground="#a6adc8" FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,12"/>
+
             <CheckBox x:Name="ChkCleanNames"
                       Content="Nettoyer les noms de jeux (aide Playnite à retrouver jaquettes et descriptions)"
                       Foreground="#cdd6f4"
@@ -404,27 +419,15 @@
                        TextWrapping="Wrap"
                        Margin="22,0,0,14"/>
 
-            <TextBlock Text="Quand plusieurs toasts arrivent en même temps :"
-                       FontWeight="SemiBold"
-                       Foreground="#cdd6f4"
-                       Margin="0,0,0,6"/>
-            <RadioButton x:Name="RbToastQueue"
-                         GroupName="ToastMode"
-                         Content="L'un après l'autre : le suivant apparaît quand le précédent a disparu"
-                         Foreground="#cdd6f4"
-                         Margin="0,0,0,4"/>
-            <RadioButton x:Name="RbToastStack"
-                         GroupName="ToastMode"
-                         Content="Superposés : jusqu'à quatre à la fois, les uns au-dessus des autres"
-                         Foreground="#cdd6f4"
-                         Margin="0,0,0,12"/>
+            <!-- Plusieurs toasts à la fois : ils s'empilent toujours (pile commune des plugins Argent, réglée dans Argent). -->
+            <Border Height="12"/>
 
             <Button x:Name="BtnTestToast"
                     Content="Afficher des toasts de test"
                     Width="230" Height="32"
                     HorizontalAlignment="Left"
                     Click="BtnTestToast_Click"/>
-            <TextBlock Text="Montre trois toasts avec vos réglages actuels (« pendant une partie » et la disposition), sans tenir compte des cases ci-dessus."
+            <TextBlock Text="Montre trois toasts avec vos réglages actuels (« pendant une partie »), sans tenir compte des cases ci-dessus."
                        Foreground="#a6adc8" FontSize="12"
                        TextWrapping="Wrap"
                        Margin="0,6,0,0"/>

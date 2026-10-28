@@ -27,6 +27,8 @@ namespace ArchiveStore
         // Taille totale attendue (0 = inconnue → barre indéterminée).
         private readonly long _totalSize;
         private readonly bool _allowCancel;
+        private readonly bool _allowBackground;
+        private volatile bool _inBackground; // lu aussi depuis les threads d'arrière-plan du plugin
 
         private bool _allowClose;       // vrai uniquement quand le PLUGIN ferme la fenêtre
         private bool _cancelRequested;
@@ -40,18 +42,28 @@ namespace ArchiveStore
         /// <summary>Déclenché quand l'utilisateur confirme l'annulation.</summary>
         public event EventHandler CancelRequested;
 
-        public ProgressWindow(long totalSize, string title, bool allowCancel)
+        /// <summary>Déclenché quand l'utilisateur demande « Continuer en arrière-plan » (touche Y).</summary>
+        public event EventHandler BackgroundRequested;
+
+        /// <summary>Vrai quand la fenêtre est masquée : le suivi passe alors par les notifications.</summary>
+        public bool InBackground { get { return _inBackground; } }
+
+        public ProgressWindow(long totalSize, string title, bool allowCancel, bool allowBackground = false)
         {
             InitializeComponent();
             _totalSize = totalSize;
             _allowCancel = allowCancel;
+            _allowBackground = allowBackground;
 
             TitleText.Text = title;
 
             // Pied de fenêtre (touche B + bouton) et rappel : seulement si on peut annuler.
-            FooterPanel.Visibility = allowCancel ? Visibility.Visible : Visibility.Collapsed;
+            FooterPanel.Visibility = (allowCancel || allowBackground) ? Visibility.Visible : Visibility.Collapsed;
             NoteText.Visibility = allowCancel ? Visibility.Visible : Visibility.Collapsed;
             BtnCancel.Visibility = allowCancel ? Visibility.Visible : Visibility.Collapsed;
+            HintCancel.Visibility = allowCancel ? Visibility.Visible : Visibility.Collapsed;
+            BtnBackground.Visibility = allowBackground ? Visibility.Visible : Visibility.Collapsed;
+            HintBackground.Visibility = allowBackground ? Visibility.Visible : Visibility.Collapsed;
 
             // Si on connaît la taille totale, on passe la barre en mode
             // "déterminée" (avec %) ; sinon elle reste "en mouvement".
@@ -195,6 +207,47 @@ namespace ArchiveStore
         // Bouton A / Entrée : volontairement sans effet (voir l'en-tête du fichier).
         protected override void OnConfirm()
         {
+        }
+
+        // Bouton Y : continuer en arrière-plan (la fenêtre se masque, l'installation continue).
+        protected override void OnActionY()
+        {
+            GoBackground();
+        }
+
+        private void BtnBackground_Click(object sender, RoutedEventArgs e)
+        {
+            GoBackground();
+        }
+
+        private void GoBackground()
+        {
+            if (!_allowBackground || _inBackground || _allowClose) return;
+            _inBackground = true;
+            BackgroundRequested?.Invoke(this, EventArgs.Empty);
+
+            // PÉDAGOGIE — le voile gris de Playnite : une fenêtre simplement masquée (Hide) reste « rattachée » à
+            // Playnite, qui la compte comme fenêtre enfant et garde son écran assombri. On la DÉTACHE donc avant de
+            // la masquer ; le correctif du Toolkit (PlayniteDim) retire alors le voile tout seul.
+            Window owner = Owner;
+            DetachOwner();
+            Hide();
+            // Rend le focus à Playnite pour que la manette continue de naviguer dans le thème.
+            try { if (owner != null) owner.Activate(); } catch (Exception) { }
+        }
+
+        private void DetachOwner()
+        {
+            try { Owner = null; }
+            catch (Exception) { /* impossible dans l'état actuel : la fenêtre reste simplement masquée */ }
+        }
+
+        // Fenêtre créée alors que l'utilisateur a DÉJÀ choisi l'arrière-plan pour cette installation
+        // (ex. les DLC après le jeu) : elle n'est jamais affichée. Appelé avant Show().
+        public void StartInBackground()
+        {
+            _inBackground = true;
+            DetachOwner(); // jamais affichée : ne doit pas être comptée comme fenêtre enfant de Playnite
         }
 
         // Bouton B / Échap : proposer d'annuler la copie.
